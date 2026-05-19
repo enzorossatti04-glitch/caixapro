@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CaixaPRO — Rossatti</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text2: #6b6b65;
+    --text3: #a0a09a;
+    --blue: #185FA5;
+    --blue-bg: #e6f1fb;
+    --blue-text: #0c447c;
+    --green: #3B6D11;
+    --green-bg: #eaf3de;
+    --amber: #854F0B;
+    --amber-bg: #faeeda;
+    --red: #A32D2D;
+    --red-bg: #fcebeb;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --sidebar: 220px;
+    --topbar: 56px;
+  }
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); display: flex; font-size: 14px; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar); min-width: var(--sidebar);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    height: 100vh; overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 20px 18px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo h1 {
+    font-size: 17px; font-weight: 600; color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sidebar-logo h1 span { color: var(--blue); }
+  .sidebar-logo p { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .nav-section {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text3);
+    padding: 16px 18px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 18px; font-size: 13px; font-weight: 500;
+    cursor: pointer; color: var(--text2);
+    border-left: 2.5px solid transparent;
+    transition: all 0.15s; user-select: none;
+  }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { color: var(--blue); border-left-color: var(--blue); background: var(--blue-bg); }
+  .nav-item i { font-size: 17px; }
+  .sidebar-footer {
+    margin-top: auto; padding: 14px 18px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .sidebar-footer .label { color: var(--text3); margin-bottom: 2px; }
+  .sidebar-footer .val { font-weight: 500; color: var(--text); }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  .topbar {
+    height: var(--topbar); min-height: var(--topbar);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; gap: 12px;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .content { flex: 1; overflow-y: auto; padding: 24px; background: var(--bg); }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; font-family: inherit; }
+  .btn-blue { background: var(--blue); color: white; }
+  .btn-blue:hover { background: var(--blue-text); }
+  .btn-outline { background: transparent; border: 1px solid var(--border2); color: var(--text2); }
+  .btn-outline:hover { background: var(--surface2); color: var(--text); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(163,45,45,0.2); }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; }
+
+  /* KPIs */
+  .kpi-grid { display: grid; gap: 12px; margin-bottom: 20px; }
+  .kpi-grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .kpi-grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; }
+  .kpi-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .kpi-value { font-size: 24px; font-weight: 600; color: var(--text); line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+  .kpi-sub.up { color: var(--green); }
+  .kpi-sub.down { color: var(--red); }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+  .badge-blue { background: var(--blue-bg); color: var(--blue-text); }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+
+  /* TABLE */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; font-size: 11px; font-weight: 600;
+    color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    background: var(--surface2); white-space: nowrap;
+    position: sticky; top: 0; z-index: 2;
+  }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--bg); }
+
+  /* INPUTS */
+  input[type=text], input[type=number], input[type=email], select, textarea {
+    padding: 8px 12px; border: 1px solid var(--border2); border-radius: var(--radius-sm);
+    font-size: 13px; font-family: inherit; background: var(--surface); color: var(--text);
+    transition: border-color 0.15s; width: 100%;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--blue); }
+
+  /* TOOLBAR */
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .toolbar input[type=text] { flex: 1; min-width: 180px; }
+  .toolbar select { width: auto; min-width: 150px; }
+
+  /* INFO BANNER */
+  .banner { display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; }
+  .banner-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(133,79,11,0.2); }
+  .banner-blue { background: var(--blue-bg); color: var(--blue-text); border: 1px solid rgba(24,95,165,0.2); }
+  .banner-green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(59,109,17,0.2); }
+
+  /* PRECO VENDA INPUT */
+  .pv-input {
+    width: 100px; padding: 5px 8px; border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); font-size: 13px; font-family: 'DM Mono', monospace;
+    background: var(--surface); color: var(--text); text-align: right;
+  }
+  .pv-input:focus { outline: none; border-color: var(--blue); }
+  .pv-input.filled { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+  .pv-input.empty { border-color: var(--red); background: var(--red-bg); }
+
+  /* PDV */
+  .pdv-layout { display: grid; grid-template-columns: 1fr 340px; gap: 16px; height: calc(100vh - var(--topbar) - 48px - 70px); }
+  .pdv-left { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  .pdv-produtos-wrap { flex: 1; overflow-y: auto; }
+  .pdv-produtos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .produto-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .produto-card:hover { border-color: var(--blue); background: var(--blue-bg); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(24,95,165,0.12); }
+  .pc-cat { font-size: 10px; color: var(--text3); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .pc-nome { font-size: 12px; font-weight: 500; color: var(--text); line-height: 1.4; margin-bottom: 4px; }
+  .pc-var { font-size: 11px; color: var(--text2); margin-bottom: 6px; }
+  .pc-preco { font-size: 15px; font-weight: 600; color: var(--blue); }
+
+  /* CARRINHO */
+  .carrinho {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); display: flex; flex-direction: column;
+    height: 100%; overflow: hidden;
+  }
+  .carr-header { padding: 16px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .carr-header-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .carr-items { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .carr-item { display: flex; align-items: center; gap: 8px; padding: 8px 18px; border-bottom: 1px solid var(--border); }
+  .carr-item:last-child { border-bottom: none; }
+  .carr-item-info { flex: 1; min-width: 0; }
+  .carr-item-nome { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .carr-item-var { font-size: 10px; color: var(--text3); }
+  .qty-ctrl { display: flex; align-items: center; gap: 6px; }
+  .qty-btn {
+    width: 24px; height: 24px; border: 1px solid var(--border2);
+    border-radius: 6px; background: var(--surface2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--text); font-weight: 500;
+    transition: all 0.1s;
+  }
+  .qty-btn:hover { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
+  .qty-num { font-size: 13px; font-weight: 600; min-width: 18px; text-align: center; }
+  .carr-item-total { font-size: 13px; font-weight: 600; color: var(--text); min-width: 70px; text-align: right; }
+  .carr-footer { padding: 16px 18px; border-top: 1px solid var(--border); }
+  .carr-total-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text2); margin-bottom: 5px; }
+  .carr-total-final { display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; color: var(--text); margin: 10px 0 14px; }
+  .pgto-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .pgto-btn {
+    padding: 8px 4px; border: 1px solid var(--border2); border-radius: var(--radius-sm);
+    font-size: 11px; font-weight: 500; cursor: pointer; background: var(--surface2);
+    color: var(--text2); text-align: center; transition: all 0.15s;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .pgto-btn i { font-size: 18px; }
+  .pgto-btn:hover { border-color: var(--blue); background: var(--blue-bg); color: var(--blue); }
+  .pgto-btn.sel { border-color: var(--blue); background: var(--blue-bg); color: var(--blue); }
+  .btn-finalizar { width: 100%; padding: 12px; background: var(--blue); color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .btn-finalizar:hover { background: var(--blue-text); }
+  .btn-limpar { width: 100%; padding: 8px; background: transparent; color: var(--text3); border: none; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; font-family: inherit; margin-top: 6px; }
+  .btn-limpar:hover { color: var(--red); }
+  .carr-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; color: var(--text3); gap: 8px; }
+  .carr-empty i { font-size: 32px; }
+  .carr-empty span { font-size: 13px; }
+
+  /* CHART BARS */
+  .chart-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .chart-label { font-size: 11px; color: var(--text2); width: 80px; text-align: right; flex-shrink: 0; }
+  .chart-bar-bg { flex: 1; background: var(--surface2); border-radius: 99px; height: 8px; overflow: hidden; }
+  .chart-bar-fill { height: 100%; border-radius: 99px; background: var(--blue); }
+  .chart-val { font-size: 11px; font-weight: 600; color: var(--text); width: 70px; flex-shrink: 0; }
+
+  /* MODAL */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); padding: 28px; width: 340px; max-width: 95vw; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal-icon { font-size: 48px; margin-bottom: 12px; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+  .modal-total { font-size: 32px; font-weight: 700; color: var(--blue); margin-bottom: 20px; }
+
+  /* NOTIF */
+  .notif {
+    position: fixed; bottom: 24px; right: 24px;
+    padding: 12px 20px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500; color: white;
+    z-index: 2000; opacity: 0; transform: translateY(10px);
+    transition: all 0.3s; pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+  .notif.show { opacity: 1; transform: translateY(0); }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-field { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-field.full { grid-column: 1 / -1; }
+
+  /* STATUS BAR */
+  .status-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+  /* RESUMO */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .resumo-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .resumo-row:last-child { border-bottom: none; }
+  .resumo-row .lbl { color: var(--text2); }
+  .resumo-row .val { font-weight: 500; }
+
+  /* IA */
+  .ai-msgs { display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; margin-bottom: 12px; }
+  .ai-msg { padding: 12px 14px; border-radius: var(--radius-sm); font-size: 13px; line-height: 1.6; }
+  .ai-msg.bot { background: var(--surface2); color: var(--text); }
+  .ai-msg.user { background: var(--blue-bg); color: var(--blue-text); align-self: flex-end; max-width: 80%; }
+  .ai-input-row { display: flex; gap: 8px; }
+  .ai-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .ai-chip { padding: 5px 12px; border: 1px solid var(--border2); border-radius: 99px; font-size: 12px; cursor: pointer; color: var(--text2); background: var(--surface); transition: all 0.15s; }
+  .ai-chip:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+
+  @media (max-width: 900px) {
+    .pdv-layout { grid-template-columns: 1fr; }
+    .carrinho { height: auto; max-height: 400px; }
+    .kpi-grid-4 { grid-template-columns: repeat(2,1fr); }
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h1><i class="ti ti-building-store"></i> Caixa<span>PRO</span></h1>
+    <p>Rossatti · Gestão de loja</p>
+  </div>
+  <div class="nav-section">Operação</div>
+  <div class="nav-item" onclick="navTo('pdv',this)" id="nav-pdv"><i class="ti ti-cash-register"></i> PDV / Caixa</div>
+  <div class="nav-section">Gestão</div>
+  <div class="nav-item active" onclick="navTo('estoque',this)" id="nav-estoque"><i class="ti ti-package"></i> Estoque / Preços</div>
+  <div class="nav-item" onclick="navTo('clientes',this)" id="nav-clientes"><i class="ti ti-users"></i> Clientes</div>
+  <div class="nav-section">Análise</div>
+  <div class="nav-item" onclick="navTo('relatorios',this)" id="nav-relatorios"><i class="ti ti-chart-bar"></i> Relatórios</div>
+  <div class="nav-item" onclick="navTo('resumo',this)" id="nav-resumo"><i class="ti ti-receipt"></i> Resumo Pedido</div>
+  <div class="nav-section">Inteligência</div>
+  <div class="nav-item" onclick="navTo('ia',this)" id="nav-ia"><i class="ti ti-robot"></i> Assistente IA</div>
+  <div class="sidebar-footer">
+    <div class="label">Usuário logado</div>
+    <div class="val">João da Silva</div>
+    <div class="label" style="margin-top:6px">Orçamento Woom</div>
+    <div class="val">#4334 · R$ 7.761,83</div>
+  </div>
+</nav>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-title" id="page-title">Estoque / Preços de Venda</div>
+    <div class="topbar-right">
+      <div class="status-bar" id="status-precos"></div>
+      <button class="btn btn-blue btn-sm" onclick="salvarPrecos()"><i class="ti ti-device-floppy"></i> Salvar preços</button>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- ESTOQUE / PREÇOS -->
+    <div class="page active" id="page-estoque">
+      <div class="banner banner-amber">
+        <i class="ti ti-pencil" style="font-size:18px;flex-shrink:0;margin-top:1px"></i>
+        <span>Preços de custo importados do Orçamento Woom #4334 (14/05/2026). Preencha o <strong>Preço de Venda</strong> de cada produto — a margem é calculada automaticamente. Campos em vermelho = sem preço definido.</span>
+      </div>
+      <div class="kpi-grid kpi-grid-4" id="kpis-estoque"></div>
+      <div class="toolbar">
+        <input type="text" placeholder="Buscar produto, cor, tamanho, código..." oninput="filtrar(this.value)" style="max-width:320px">
+        <select onchange="filtrarCat(this.value)" id="sel-cat">
+          <option value="">Todas as categorias</option>
+        </select>
+        <select onchange="filtrarStatus(this.value)">
+          <option value="">Todos os produtos</option>
+          <option value="pendente">Sem preço de venda</option>
+          <option value="ok">Com preço de venda</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px">#</th>
+              <th>Produto</th>
+              <th>Categoria</th>
+              <th>Cor / Tamanho</th>
+              <th style="text-align:center">Qtde</th>
+              <th>Custo unit.</th>
+              <th>Preço de venda <span style="color:var(--red)">*</span></th>
+              <th>Margem %</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PDV -->
+    <div class="page" id="page-pdv">
+      <div class="toolbar">
+        <input type="text" placeholder="Buscar produto no PDV..." oninput="filtrarPDV(this.value)">
+      </div>
+      <div class="pdv-layout">
+        <div class="pdv-left">
+          <div class="pdv-produtos-wrap">
+            <div class="pdv-produtos" id="pdv-grid"></div>
+          </div>
+        </div>
+        <div class="carrinho">
+          <div class="carr-header">
+            <div class="carr-header-title"><i class="ti ti-shopping-cart" style="font-size:18px;color:var(--blue)"></i> Carrinho</div>
+            <span id="carr-qtd" style="font-size:12px;color:var(--text3)">0 itens</span>
+          </div>
+          <div class="carr-items" id="carr-items">
+            <div class="carr-empty"><i class="ti ti-shopping-cart-off"></i><span>Nenhum item adicionado</span></div>
+          </div>
+          <div class="carr-footer">
+            <div class="carr-total-row"><span>Subtotal</span><span id="c-sub">R$ 0,00</span></div>
+            <div class="carr-total-row"><span>Desconto</span><span>R$ 0,00</span></div>
+            <div class="carr-total-final"><span>Total</span><span id="c-tot">R$ 0,00</span></div>
+            <div class="pgto-grid">
+              <div class="pgto-btn sel" onclick="selPgto(this,'dinheiro')"><i class="ti ti-cash"></i>Dinheiro</div>
+              <div class="pgto-btn" onclick="selPgto(this,'credito')"><i class="ti ti-credit-card"></i>Crédito</div>
+              <div class="pgto-btn" onclick="selPgto(this,'pix')"><i class="ti ti-qrcode"></i>Pix</div>
+            </div>
+            <button class="btn-finalizar" onclick="finalizarVenda()"><i class="ti ti-check"></i> Finalizar Venda</button>
+            <button class="btn-limpar" onclick="limparCarrinho()">Limpar carrinho</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="page" id="page-clientes">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-size:13px;color:var(--text2)" id="clientes-count"></span>
+        <button class="btn btn-blue btn-sm" onclick="abrirModalCliente()"><i class="ti ti-plus"></i> Novo cliente</button>
+      </div>
+      <div id="clientes-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
+    </div>
+
+    <!-- RELATÓRIOS -->
+    <div class="page" id="page-relatorios">
+      <div class="kpi-grid kpi-grid-4">
+        <div class="kpi"><div class="kpi-label">Vendas hoje</div><div class="kpi-value">R$ 1.847</div><div class="kpi-sub up"><i class="ti ti-trending-up"></i> +12% vs ontem</div></div>
+        <div class="kpi"><div class="kpi-label">Transações</div><div class="kpi-value">23</div><div class="kpi-sub up"><i class="ti ti-trending-up"></i> +5 vs ontem</div></div>
+        <div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-value">R$ 80</div><div class="kpi-sub">Estável</div></div>
+        <div class="kpi"><div class="kpi-label">Mês atual</div><div class="kpi-value">R$ 34,2k</div><div class="kpi-sub up"><i class="ti ti-trending-up"></i> +8% vs mês ant.</div></div>
+      </div>
+      <div class="two-col" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-title">Vendas por dia (últimos 7 dias)</div>
+          <div id="chart-vendas"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Top produtos</div>
+          <div id="chart-produtos"></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Hora</th><th>Itens</th><th>Pagamento</th><th>Total</th></tr></thead>
+          <tbody id="tabela-vendas"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RESUMO PEDIDO -->
+    <div class="page" id="page-resumo">
+      <div class="kpi-grid kpi-grid-3" id="kpis-resumo"></div>
+      <div class="two-col" style="margin-top:16px">
+        <div class="card">
+          <div class="card-title">Por categoria</div>
+          <div id="resumo-cats"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Dados do pedido Woom #4334</div>
+          <div id="resumo-pedido"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IA -->
+    <div class="page" id="page-ia">
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-robot" style="color:var(--blue);margin-right:6px"></i>Assistente IA — CaixaPRO</div>
+          <div class="ai-msgs" id="ai-msgs">
+            <div class="ai-msg bot">Olá! Sou o assistente inteligente do CaixaPRO. Posso analisar vendas, verificar estoque, calcular margens e sugerir ações. Como posso ajudar?</div>
+          </div>
+          <div class="ai-chips">
+            <div class="ai-chip" onclick="enviarIA('Quais produtos estão com estoque crítico?')">Estoque crítico</div>
+            <div class="ai-chip" onclick="enviarIA('Como melhorar o ticket médio da loja?')">Aumentar ticket</div>
+            <div class="ai-chip" onclick="enviarIA('Analise as margens do pedido Woom #4334')">Analisar margens</div>
+            <div class="ai-chip" onclick="enviarIA('Quais categorias têm mais produtos no estoque?')">Distribuição estoque</div>
+            <div class="ai-chip" onclick="enviarIA('Dicas para vender roupas de running')">Dicas de venda</div>
+          </div>
+          <div class="ai-input-row">
+            <input type="text" id="ai-input" placeholder="Pergunte ao assistente..." onkeydown="if(event.key==='Enter')enviarIA()">
+            <button class="btn btn-blue" onclick="enviarIA()"><i class="ti ti-send"></i></button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Insights automáticos</div>
+          <div style="display:flex;flex-direction:column;gap:10px" id="insights-box"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL VENDA OK -->
+<div class="modal-bg" id="modal-venda">
+  <div class="modal">
+    <div class="modal-icon" style="color:var(--green)"><i class="ti ti-circle-check"></i></div>
+    <div class="modal-title">Venda finalizada!</div>
+    <div class="modal-sub" id="mv-pgto">Dinheiro</div>
+    <div class="modal-total" id="mv-total">R$ 0,00</div>
+    <button class="btn btn-blue" style="width:100%" onclick="document.getElementById('modal-venda').classList.remove('open')">Nova venda</button>
+  </div>
+</div>
+
+<!-- MODAL CLIENTE -->
+<div class="modal-bg" id="modal-cliente">
+  <div class="modal" style="text-align:left;width:380px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px">Novo cliente</div>
+    <div class="form-grid">
+      <div class="form-field full"><div class="form-label">Nome completo</div><input type="text" id="nc-nome" placeholder="Nome do cliente"></div>
+      <div class="form-field"><div class="form-label">Telefone</div><input type="text" id="nc-tel" placeholder="(67) 99999-9999"></div>
+      <div class="form-field"><div class="form-label">E-mail</div><input type="email" id="nc-email" placeholder="email@exemplo.com"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('modal-cliente').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-blue" style="flex:1" onclick="salvarCliente()">Salvar cliente</button>
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+const PRODUTOS = [
+  {id:1,nome:'Shorts Running 2em1 Woom Marathon Feminino',cod:'1039152221124',cat:'Shorts',cor:'Verde',tam:'P',qtde:1,custo:166.61},
+  {id:2,nome:'Shorts Running 2em1 Woom Marathon Feminino',cod:'1039151921224',cat:'Shorts',cor:'Preto',tam:'M',qtde:1,custo:166.61},
+  {id:3,nome:'Regata Running Woom Light Run Masculina',cod:'1036151911424',cat:'Regatas',cor:'Preto',tam:'GG',qtde:1,custo:72.17},
+  {id:4,nome:'Regata Running Woom Light Run Masculina',cod:'1036151911324',cat:'Regatas',cor:'Preto',tam:'G',qtde:1,custo:72.17},
+  {id:5,nome:'Regata Running Woom Light Run Masculina',cod:'1036151911224',cat:'Regatas',cor:'Preto',tam:'M',qtde:1,custo:72.17},
+  {id:6,nome:'Regata Running Woom Light Run Masculina',cod:'1036151411324',cat:'Regatas',cor:'Chumbo',tam:'G',qtde:1,custo:72.17},
+  {id:7,nome:'Regata Running Woom Light Run Masculina',cod:'1036151311424',cat:'Regatas',cor:'Branco',tam:'GG',qtde:1,custo:72.17},
+  {id:8,nome:'Regata Running Woom Light Run Masculina',cod:'1036151311324',cat:'Regatas',cor:'Branco',tam:'G',qtde:1,custo:72.17},
+  {id:9,nome:'Regata Running Woom Light Run Masculina',cod:'1036151311224',cat:'Regatas',cor:'Branco',tam:'M',qtde:1,custo:72.17},
+  {id:10,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017152221024',cat:'Camisetas',cor:'Verde',tam:'PP',qtde:1,custo:83.28},
+  {id:11,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017151321024',cat:'Camisetas',cor:'Branco',tam:'PP',qtde:1,custo:83.28},
+  {id:12,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017152221124',cat:'Camisetas',cor:'Verde',tam:'P',qtde:1,custo:83.28},
+  {id:13,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017152021124',cat:'Camisetas',cor:'Rosa',tam:'P',qtde:1,custo:83.28},
+  {id:14,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017151321124',cat:'Camisetas',cor:'Branco',tam:'P',qtde:1,custo:83.28},
+  {id:15,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017152221224',cat:'Camisetas',cor:'Verde',tam:'M',qtde:1,custo:83.28},
+  {id:16,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017151921224',cat:'Camisetas',cor:'Preto',tam:'M',qtde:1,custo:83.28},
+  {id:17,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017151321224',cat:'Camisetas',cor:'Branco',tam:'M',qtde:1,custo:83.28},
+  {id:18,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017151121224',cat:'Camisetas',cor:'Azul',tam:'M',qtde:1,custo:83.28},
+  {id:19,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017152221424',cat:'Camisetas',cor:'Verde',tam:'GG',qtde:1,custo:83.28},
+  {id:20,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017152221324',cat:'Camisetas',cor:'Verde',tam:'G',qtde:1,custo:83.28},
+  {id:21,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017152021324',cat:'Camisetas',cor:'Rosa',tam:'G',qtde:1,custo:83.28},
+  {id:22,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017151921324',cat:'Camisetas',cor:'Preto',tam:'G',qtde:1,custo:83.28},
+  {id:23,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017151321324',cat:'Camisetas',cor:'Branco',tam:'G',qtde:1,custo:83.28},
+  {id:24,nome:'Camiseta Running Woom Light Run Feminina',cod:'1017151121324',cat:'Camisetas',cor:'Azul',tam:'G',qtde:1,custo:83.28},
+  {id:25,nome:'Bermuda Running Series Woom Chicago Feminino',cod:'15071041511812200',cat:'Bermudas',cor:'Preto',tam:'M',qtde:1,custo:194.38},
+  {id:26,nome:'Top Running Series Woom Branco Feminino',cod:'15271521510612200',cat:'Tops',cor:'Branco',tam:'M',qtde:1,custo:149.94},
+  {id:27,nome:'Top Running Series Woom Branco Feminino',cod:'15261521510611200',cat:'Tops',cor:'Branco',tam:'P',qtde:1,custo:149.94},
+  {id:28,nome:'Top Running Woom Marathon Feminino',cod:'1041151921124',cat:'Tops',cor:'Preto',tam:'P',qtde:1,custo:111.06},
+  {id:29,nome:'Top Running Woom Marathon Feminino',cod:'1041151921324',cat:'Tops',cor:'Preto',tam:'G',qtde:1,custo:111.06},
+  {id:30,nome:'Bermuda Running Series Woom Feminino',cod:'1004155621224',cat:'Bermudas',cor:'Berlim Verde',tam:'M',qtde:1,custo:166.61},
+  {id:31,nome:'Bermuda Running Series Woom Feminino',cod:'1004155421324',cat:'Bermudas',cor:'Preto',tam:'G',qtde:1,custo:166.61},
+  {id:32,nome:'Bermuda Running Woom Carbon Phantom Black Feminino',cod:'11051041011812200',cat:'Bermudas',cor:'Black',tam:'M',qtde:1,custo:222.16},
+  {id:33,nome:'Bermuda Running Woom Light Run Masculino',cod:'13371041410114113',cat:'Bermudas',cor:'Azul',tam:'GG',qtde:1,custo:127.72},
+  {id:34,nome:'Bermuda Running Woom Light Run Masculino',cod:'13381041410113113',cat:'Bermudas',cor:'Azul',tam:'G',qtde:1,custo:127.72},
+  {id:35,nome:'Bermuda Running Woom Light Run Masculino',cod:'13401041410112113',cat:'Bermudas',cor:'Azul',tam:'M',qtde:1,custo:127.72},
+  {id:36,nome:'Bermuda Running Woom Light Run Masculino',cod:'13391041410111113',cat:'Bermudas',cor:'Azul',tam:'P',qtde:1,custo:127.72},
+  {id:37,nome:'Shorts Running Woom Marathon Masculino',cod:'1038151911124',cat:'Shorts',cor:'Preto',tam:'P',qtde:1,custo:138.83},
+  {id:38,nome:'Shorts Running Woom Marathon Masculino',cod:'1038151911224',cat:'Shorts',cor:'Preto',tam:'M',qtde:1,custo:138.83},
+  {id:39,nome:'Shorts Running Woom Marathon Masculino',cod:'1038151911424',cat:'Shorts',cor:'Preto',tam:'GG',qtde:1,custo:138.83},
+  {id:40,nome:'Shorts Running Woom Marathon Masculino',cod:'1038151911324',cat:'Shorts',cor:'Preto',tam:'G',qtde:1,custo:138.83},
+  {id:41,nome:'Shorts Running 2em1 Woom Marathon Masculino',cod:'1039151911424',cat:'Shorts',cor:'Preto',tam:'GG',qtde:1,custo:166.61},
+  {id:42,nome:'Manguito Woom GearLab Unissex',cod:'1051271931425',cat:'Acessórios',cor:'Preto',tam:'GG',qtde:1,custo:83.27},
+  {id:43,nome:'Manguito Woom GearLab Unissex',cod:'1051271931325',cat:'Acessórios',cor:'Preto',tam:'G',qtde:2,custo:83.27},
+  {id:44,nome:'Manguito Woom GearLab Unissex',cod:'1051271331225',cat:'Acessórios',cor:'Branco',tam:'M',qtde:1,custo:83.27},
+  {id:45,nome:'Manguito Woom GearLab Unissex',cod:'1051271331325',cat:'Acessórios',cor:'Branco',tam:'G',qtde:1,custo:83.27},
+  {id:46,nome:'Porta Número Running Woom Basic Black Unissex',cod:'1035152431624',cat:'Acessórios',cor:'Preto',tam:'Único',qtde:3,custo:38.83},
+  {id:47,nome:'Meia Cano Alto Woom GearLab Feminino',cod:'1032275832424',cat:'Meias',cor:'Preto e Azul',tam:'34-38',qtde:2,custo:44.38},
+  {id:48,nome:'Meia Cano Alto Woom GearLab Feminino',cod:'1032271632424',cat:'Meias',cor:'Lilás',tam:'34-38',qtde:2,custo:44.38},
+  {id:49,nome:'Meia Cano Alto Woom GearLab Feminino',cod:'1032271932424',cat:'Meias',cor:'Preto',tam:'34-38',qtde:4,custo:44.38},
+  {id:50,nome:'Meia Cano Alto Woom GearLab Masculino',cod:'1032271332324',cat:'Meias',cor:'Branco',tam:'39-44',qtde:2,custo:44.38},
+  {id:51,nome:'Viseira Running Woom Light Run Unissex',cod:'1044151331624',cat:'Bonés/Viseiras',cor:'Branco',tam:'Único',qtde:1,custo:66.61},
+  {id:52,nome:'Boné Running Woom AeroFast Unissex',cod:'16846484846',cat:'Bonés/Viseiras',cor:'Zebra',tam:'Único',qtde:1,custo:94.38},
+  {id:53,nome:'Boné Running Woom AeroFast Unissex',cod:'1052159831626',cat:'Bonés/Viseiras',cor:'Sunset',tam:'Único',qtde:1,custo:94.38},
+  {id:54,nome:'Boné Running Woom AeroFast Unissex',cod:'1052152531626',cat:'Bonés/Viseiras',cor:'Ice',tam:'Único',qtde:1,custo:94.38},
+  {id:55,nome:'Boné Running Woom AeroFast Unissex',cod:'1052152431626',cat:'Bonés/Viseiras',cor:'Black',tam:'Único',qtde:1,custo:94.38},
+  {id:56,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151911524',cat:'Camisetas',cor:'Preto',tam:'XGG',qtde:1,custo:83.28},
+  {id:57,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151311524',cat:'Camisetas',cor:'Branco',tam:'XGG',qtde:1,custo:83.28},
+  {id:58,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017156211524',cat:'Camisetas',cor:'Azul Royal',tam:'XGG',qtde:1,custo:83.28},
+  {id:59,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151311124',cat:'Camisetas',cor:'Branco',tam:'P',qtde:3,custo:83.28},
+  {id:60,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151911224',cat:'Camisetas',cor:'Preto',tam:'M',qtde:1,custo:83.28},
+  {id:61,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151411224',cat:'Camisetas',cor:'Chumbo',tam:'M',qtde:3,custo:83.28},
+  {id:62,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151311224',cat:'Camisetas',cor:'Branco',tam:'M',qtde:1,custo:83.28},
+  {id:63,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151311424',cat:'Camisetas',cor:'Branco',tam:'GG',qtde:3,custo:83.28},
+  {id:64,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017156211424',cat:'Camisetas',cor:'Azul Royal',tam:'GG',qtde:2,custo:83.28},
+  {id:65,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151911324',cat:'Camisetas',cor:'Preto',tam:'G',qtde:1,custo:83.28},
+  {id:66,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151411324',cat:'Camisetas',cor:'Chumbo',tam:'G',qtde:3,custo:83.28},
+  {id:67,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017156211324',cat:'Camisetas',cor:'Azul Royal',tam:'G',qtde:1,custo:83.28},
+];
+
+let precoVenda = {};
+let clientes = [
+  {nome:'Ana Paula Souza',tel:'(67) 99812-3456',email:'ana@email.com',compras:12},
+  {nome:'Carlos Mendez',tel:'(67) 98765-4321',email:'carlos@email.com',compras:7},
+  {nome:'Fernanda Lima',tel:'(67) 99234-5678',email:'fer@email.com',compras:3},
+  {nome:'Roberto Alves',tel:'(67) 91234-5678',email:'rob@email.com',compras:19},
+];
+let carrinho = [];
+let pgtoAtual = 'dinheiro';
+let ftTexto='', ftCat='', ftStatus='';
+
+const fmt = v => v!=null ? 'R$ '+Number(v).toFixed(2).replace('.',',') : '-';
+const cats = () => [...new Set(PRODUTOS.map(p=>p.cat))].sort();
+
+function navTo(page, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  el.classList.add('active');
+  const t={pdv:'PDV / Frente de Caixa',estoque:'Estoque / Preços de Venda',clientes:'Clientes',relatorios:'Relatórios',resumo:'Resumo do Pedido',ia:'Assistente IA'};
+  document.getElementById('page-title').textContent = t[page]||page;
+  const salvar = document.querySelector('.topbar-right .btn-blue');
+  salvar.style.display = page==='estoque'?'inline-flex':'none';
+  if(page==='pdv') renderPDV();
+  if(page==='relatorios') renderRelatorios();
+  if(page==='resumo') renderResumo();
+  if(page==='clientes') renderClientes();
+  if(page==='ia') renderInsights();
+}
+
+// Estoque
+function initFiltros(){
+  const sel=document.getElementById('sel-cat');
+  cats().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
+}
+
+function prodsFiltrados(){
+  return PRODUTOS.filter(p=>{
+    const t=ftTexto.toLowerCase();
+    const m=!t||[p.nome,p.cor,p.tam,p.cod,p.cat].join(' ').toLowerCase().includes(t);
+    const mc=!ftCat||p.cat===ftCat;
+    const pv=precoVenda[p.id];
+    const ms=!ftStatus||(ftStatus==='pendente'?!pv:!!pv);
+    return m&&mc&&ms;
+  });
+}
+
+function renderTabela(){
+  const lista=prodsFiltrados();
+  document.getElementById('tbody').innerHTML=lista.map(p=>{
+    const pv=precoVenda[p.id]||'';
+    const m=pv?((pv-p.custo)/pv*100).toFixed(1):null;
+    const ic=pv?'filled':'empty';
+    const mc=m!=null?(parseFloat(m)>0?'color:var(--green)':'color:var(--red)'):'color:var(--text3)';
+    return `<tr>
+      <td style="color:var(--text3);font-size:11px">${p.id}</td>
+      <td>
+        <div style="font-weight:500;font-size:13px;line-height:1.4">${p.nome}</div>
+        <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${p.cod}</div>
+      </td>
+      <td><span class="badge badge-blue">${p.cat}</span></td>
+      <td style="font-size:12px;color:var(--text2)">${p.cor} · ${p.tam}</td>
+      <td style="text-align:center;font-weight:600">${p.qtde}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:13px;color:var(--text2)">${fmt(p.custo)}</td>
+      <td><input type="number" class="pv-input ${ic}" id="pv-${p.id}" value="${pv}" min="0" step="0.01" placeholder="0,00" oninput="atualizarPV(${p.id},this)"></td>
+      <td style="font-weight:600;font-size:13px;${mc}">${m!=null?m+'%':'—'}</td>
+    </tr>`;
+  }).join('');
+  renderKpisEstoque();
+  renderStatusBar();
+}
+
+function atualizarPV(id,input){
+  const v=parseFloat(input.value);
+  if(!input.value||isNaN(v)){delete precoVenda[id];input.className='pv-input empty';}
+  else{precoVenda[id]=v;input.className='pv-input filled';}
+  const tr=input.closest('tr');
+  const p=PRODUTOS.find(x=>x.id===id);
+  const m=v&&!isNaN(v)?((v-p.custo)/v*100).toFixed(1):null;
+  const td=tr.querySelectorAll('td')[7];
+  if(td){
+    td.textContent=m!=null?m+'%':'—';
+    td.style.color=m!=null?(parseFloat(m)>0?'var(--green)':'var(--red)'):'var(--text3)';
+  }
+  renderKpisEstoque();renderStatusBar();
+}
+
+function renderKpisEstoque(){
+  const com=PRODUTOS.filter(p=>precoVenda[p.id]).length;
+  const sem=PRODUTOS.length-com;
+  const custT=PRODUTOS.reduce((a,p)=>a+p.custo*p.qtde,0);
+  const vendaT=PRODUTOS.filter(p=>precoVenda[p.id]).reduce((a,p)=>a+precoVenda[p.id]*p.qtde,0);
+  document.getElementById('kpis-estoque').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Total SKUs</div><div class="kpi-value">${PRODUTOS.length}</div><div class="kpi-sub">85 unidades no pedido</div></div>
+    <div class="kpi"><div class="kpi-label">Com preço de venda</div><div class="kpi-value" style="color:var(--green)">${com}</div><div class="kpi-sub up">de ${PRODUTOS.length} SKUs</div></div>
+    <div class="kpi"><div class="kpi-label">Sem preço de venda</div><div class="kpi-value" style="color:var(--red)">${sem}</div><div class="kpi-sub down">${sem>0?'Pendentes':'Tudo preenchido ✓'}</div></div>
+    <div class="kpi"><div class="kpi-label">Custo total pedido</div><div class="kpi-value" style="font-size:18px">R$ 7.762</div><div class="kpi-sub">Venda proj.: ${vendaT>0?fmt(vendaT):'—'}</div></div>
+  `;
+}
+
+function renderStatusBar(){
+  const sem=PRODUTOS.filter(p=>!precoVenda[p.id]).length;
+  const el=document.getElementById('status-precos');
+  if(sem>0){
+    el.innerHTML=`<div class="status-dot" style="background:var(--amber)"></div><span style="color:var(--amber);font-size:12px">${sem} produto(s) sem preço</span>`;
+  } else {
+    el.innerHTML=`<div class="status-dot" style="background:var(--green)"></div><span style="color:var(--green);font-size:12px">Todos os preços preenchidos</span>`;
+  }
+}
+
+function filtrar(v){ftTexto=v;renderTabela();}
+function filtrarCat(v){ftCat=v;renderTabela();}
+function filtrarStatus(v){ftStatus=v;renderTabela();}
+
+function salvarPrecos(){
+  const sem=PRODUTOS.filter(p=>!precoVenda[p.id]).length;
+  notif(sem>0?`Atenção: ${sem} produto(s) ainda sem preço de venda`:'Preços salvos! PDV atualizado.', sem>0?'warn':'ok');
+}
+
+// PDV
+function renderPDV(busca=''){
+  const t=busca.toLowerCase();
+  const lista=PRODUTOS.filter(p=>precoVenda[p.id]&&(!t||[p.nome,p.cor,p.tam,p.cat].join(' ').toLowerCase().includes(t)));
+  const semPreco=PRODUTOS.filter(p=>!precoVenda[p.id]).length;
+  let html='';
+  if(!lista.length&&!semPreco){
+    html='<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text3)">Nenhum produto encontrado.</div>';
+  } else if(!lista.length&&semPreco>0){
+    html=`<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text3)"><i class="ti ti-tag-off" style="font-size:32px;display:block;margin-bottom:8px"></i>Nenhum produto com preço de venda definido.<br>Configure os preços em <strong>Estoque / Preços</strong>.</div>`;
+  } else {
+    html=lista.map(p=>`
+      <div class="produto-card" onclick="addCarrinho(${p.id})">
+        <div class="pc-cat">${p.cat}</div>
+        <div class="pc-nome">${p.nome.replace('Running Woom','').replace('Woom','').trim()}</div>
+        <div class="pc-var">${p.cor} · ${p.tam}</div>
+        <div class="pc-preco">${fmt(precoVenda[p.id])}</div>
+      </div>`).join('');
+    if(semPreco>0&&!busca) html+=`<div style="grid-column:1/-1;padding:10px 12px;background:var(--amber-bg);border-radius:var(--radius-sm);font-size:12px;color:var(--amber)">${semPreco} produto(s) sem preço — configure em Estoque/Preços.</div>`;
+  }
+  document.getElementById('pdv-grid').innerHTML=html;
+}
+
+function filtrarPDV(v){renderPDV(v);}
+
+function addCarrinho(id){
+  const p=PRODUTOS.find(x=>x.id===id);
+  const ex=carrinho.find(x=>x.id===id);
+  if(ex)ex.qty++;else carrinho.push({...p,qty:1});
+  renderCarrinho();
+}
+
+function renderCarrinho(){
+  const cont=document.getElementById('carr-items');
+  if(!carrinho.length){
+    cont.innerHTML='<div class="carr-empty"><i class="ti ti-shopping-cart-off"></i><span>Nenhum item adicionado</span></div>';
+    document.getElementById('carr-qtd').textContent='0 itens';
+    document.getElementById('c-sub').textContent='R$ 0,00';
+    document.getElementById('c-tot').textContent='R$ 0,00';
+    return;
+  }
+  cont.innerHTML=carrinho.map(i=>`
+    <div class="carr-item">
+      <div class="carr-item-info">
+        <div class="carr-item-nome">${i.nome.split(' ').slice(-3).join(' ')}</div>
+        <div class="carr-item-var">${i.cor} · ${i.tam}</div>
+      </div>
+      <div class="qty-ctrl">
+        <div class="qty-btn" onclick="chgQty(${i.id},-1)">−</div>
+        <span class="qty-num">${i.qty}</span>
+        <div class="qty-btn" onclick="chgQty(${i.id},1)">+</div>
+      </div>
+      <div class="carr-item-total">${fmt((precoVenda[i.id]||0)*i.qty)}</div>
+    </div>`).join('');
+  const tot=carrinho.reduce((a,b)=>a+(precoVenda[b.id]||0)*b.qty,0);
+  const qtd=carrinho.reduce((a,b)=>a+b.qty,0);
+  document.getElementById('carr-qtd').textContent=qtd+' ite'+(qtd===1?'m':'ns');
+  document.getElementById('c-sub').textContent=fmt(tot);
+  document.getElementById('c-tot').textContent=fmt(tot);
+}
+
+function chgQty(id,d){
+  const i=carrinho.find(x=>x.id===id);
+  i.qty+=d;if(i.qty<=0)carrinho=carrinho.filter(x=>x.id!==id);
+  renderCarrinho();
+}
+function limparCarrinho(){carrinho=[];renderCarrinho();}
+function selPgto(el,p){document.querySelectorAll('.pgto-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');pgtoAtual=p;}
+
+function finalizarVenda(){
+  if(!carrinho.length){notif('Adicione itens ao carrinho!','warn');return;}
+  const tot=carrinho.reduce((a,b)=>a+(precoVenda[b.id]||0)*b.qty,0);
+  const pgtoNomes={dinheiro:'Pagamento em Dinheiro',credito:'Cartão de Crédito',pix:'Pix'};
+  document.getElementById('mv-pgto').textContent=pgtoNomes[pgtoAtual];
+  document.getElementById('mv-total').textContent=fmt(tot);
+  document.getElementById('modal-venda').classList.add('open');
+  carrinho=[];renderCarrinho();
+}
+
+// Clientes
+function renderClientes(){
+  const cores=[['#E6F1FB','#185FA5'],['#EAF3DE','#3B6D11'],['#FAEEDA','#854F0B'],['#FCEBEB','#A32D2D']];
+  document.getElementById('clientes-count').textContent=`${clientes.length} cliente(s) cadastrado(s)`;
+  document.getElementById('clientes-grid').innerHTML=clientes.map((c,i)=>{
+    const [bg,fg]=cores[i%4];
+    const ini=c.nome.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+    return `<div class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:42px;height:42px;border-radius:50%;background:${bg};color:${fg};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${ini}</div>
+        <div><div style="font-weight:600;font-size:14px">${c.nome}</div><span class="badge badge-blue">${c.compras} compras</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text2)">
+        <div><i class="ti ti-phone" style="font-size:13px;margin-right:5px"></i>${c.tel}</div>
+        <div><i class="ti ti-mail" style="font-size:13px;margin-right:5px"></i>${c.email}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirModalCliente(){document.getElementById('modal-cliente').classList.add('open');}
+function salvarCliente(){
+  const nome=document.getElementById('nc-nome').value.trim();
+  if(!nome){notif('Informe o nome','warn');return;}
+  clientes.push({nome,tel:document.getElementById('nc-tel').value,email:document.getElementById('nc-email').value,compras:0});
+  renderClientes();
+  document.getElementById('modal-cliente').classList.remove('open');
+  ['nc-nome','nc-tel','nc-email'].forEach(id=>document.getElementById(id).value='');
+  notif('Cliente cadastrado!','ok');
+}
+
+// Relatórios
+function renderRelatorios(){
+  const dias=[['Seg',1240],['Ter',980],['Qua',1560],['Qui',2100],['Sex',1847],['Sáb',3200],['Dom',2800]];
+  const maxD=Math.max(...dias.map(d=>d[1]));
+  document.getElementById('chart-vendas').innerHTML=dias.map(([d,v])=>`
+    <div class="chart-row">
+      <div class="chart-label">${d}</div>
+      <div class="chart-bar-bg"><div class="chart-bar-fill" style="width:${Math.round(v/maxD*100)}%"></div></div>
+      <div class="chart-val">R$ ${(v/1000).toFixed(1)}k</div>
+    </div>`).join('');
+  const prods=[['Camiseta Fem.Verde M',42],['Shorts Masc.Preto G',38],['Bermuda Fem.Preto',29],['Regata Masc.Branco',21],['Meia Fem.Preto',17]];
+  const maxP=prods[0][1];
+  document.getElementById('chart-produtos').innerHTML=prods.map(([n,v])=>`
+    <div class="chart-row">
+      <div class="chart-label" style="font-size:10px;width:90px">${n}</div>
+      <div class="chart-bar-bg"><div class="chart-bar-fill" style="width:${Math.round(v/maxP*100)}%;background:var(--green)"></div></div>
+      <div class="chart-val">${v} un.</div>
+    </div>`).join('');
+  const vendas=[['#0023','14:32',3,'Pix',47.80],['#0022','14:01',1,'Crédito',27.50],['#0021','13:44',5,'Dinheiro',112.30],['#0020','12:58',2,'Débito',24.89],['#0019','12:12',4,'Pix',63.40]];
+  document.getElementById('tabela-vendas').innerHTML=vendas.map(([n,h,i,pg,t])=>`
+    <tr><td style="font-family:'DM Mono',monospace">${n}</td><td>${h}</td><td>${i} itens</td><td><span class="badge badge-blue">${pg}</span></td><td style="font-weight:600">${fmt(t)}</td></tr>`).join('');
+}
+
+// Resumo
+function renderResumo(){
+  const catMap={};
+  PRODUTOS.forEach(p=>{
+    if(!catMap[p.cat])catMap[p.cat]={qtde:0,custo:0,venda:0,skus:0};
+    catMap[p.cat].qtde+=p.qtde;catMap[p.cat].custo+=p.custo*p.qtde;
+    catMap[p.cat].venda+=(precoVenda[p.id]||0)*p.qtde;catMap[p.cat].skus++;
+  });
+  const bgs=['badge-blue','badge-green','badge-amber','badge-red'];let bi=0;
+  document.getElementById('resumo-cats').innerHTML=Object.entries(catMap).map(([cat,d])=>`
+    <div class="resumo-row">
+      <span><span class="badge ${bgs[bi++%4]}">${cat}</span></span>
+      <span style="color:var(--text3);font-size:12px">${d.skus} SKUs · ${d.qtde} un.</span>
+      <span class="val" style="font-family:'DM Mono',monospace">${fmt(d.custo)}</span>
+    </div>`).join('');
+  const custT=PRODUTOS.reduce((a,p)=>a+p.custo*p.qtde,0);
+  const vendaT=PRODUTOS.filter(p=>precoVenda[p.id]).reduce((a,p)=>a+precoVenda[p.id]*p.qtde,0);
+  const lucro=vendaT-custT;
+  document.getElementById('resumo-pedido').innerHTML=`
+    <div class="resumo-row"><span class="lbl">Fornecedor</span><span class="val">Woom</span></div>
+    <div class="resumo-row"><span class="lbl">Orçamento</span><span class="val">#4334</span></div>
+    <div class="resumo-row"><span class="lbl">Emissão</span><span class="val">14/05/2026</span></div>
+    <div class="resumo-row"><span class="lbl">Vendedor</span><span class="val">Frederico Fagundes</span></div>
+    <div class="resumo-row"><span class="lbl">Qtde. total</span><span class="val">85 unidades</span></div>
+    <div class="resumo-row"><span class="lbl">Total SKUs</span><span class="val">67</span></div>
+    <div class="resumo-row"><span class="lbl">Custo total</span><span class="val">${fmt(custT)}</span></div>
+    <div class="resumo-row"><span class="lbl">Venda projetada</span><span class="val" style="color:var(--blue)">${vendaT>0?fmt(vendaT):'—'}</span></div>
+    ${vendaT>0?`<div class="resumo-row"><span class="lbl">Lucro estimado</span><span class="val" style="color:${lucro>0?'var(--green)':'var(--red)'}">${fmt(lucro)}</span></div>`:''}
+  `;
+  document.getElementById('kpis-resumo').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Custo total</div><div class="kpi-value" style="font-size:20px">R$ 7.762</div><div class="kpi-sub">85 un. · 67 SKUs</div></div>
+    <div class="kpi"><div class="kpi-label">Venda projetada</div><div class="kpi-value" style="font-size:20px;color:var(--blue)">${vendaT>0?'R$ '+Math.round(vendaT).toLocaleString('pt-BR'):'—'}</div><div class="kpi-sub">${PRODUTOS.filter(p=>precoVenda[p.id]).length} de 67 com preço</div></div>
+    <div class="kpi"><div class="kpi-label">Lucro estimado</div><div class="kpi-value" style="font-size:20px;color:${lucro>0?'var(--green)':'var(--text3)'}">${vendaT>0?fmt(lucro):'—'}</div><div class="kpi-sub">${vendaT>0?'Margem: '+((lucro/vendaT)*100).toFixed(1)+'%':'Preencha os preços'}</div></div>
+  `;
+}
+
+// Insights
+function renderInsights(){
+  const sem=PRODUTOS.filter(p=>!precoVenda[p.id]).length;
+  document.getElementById('insights-box').innerHTML=`
+    ${sem>0?`<div style="padding:12px;background:var(--red-bg);border-radius:var(--radius-sm);font-size:13px"><div style="font-weight:600;color:var(--red);margin-bottom:4px"><i class="ti ti-alert-circle" style="margin-right:4px"></i>Preços pendentes</div><div style="color:var(--text2)">${sem} produto(s) ainda sem preço de venda definido.</div></div>`:''}
+    <div style="padding:12px;background:var(--green-bg);border-radius:var(--radius-sm);font-size:13px"><div style="font-weight:600;color:var(--green);margin-bottom:4px"><i class="ti ti-trending-up" style="margin-right:4px"></i>Tendência positiva</div><div style="color:var(--text2)">Vendas de bebidas cresceram 24% esta semana.</div></div>
+    <div style="padding:12px;background:var(--amber-bg);border-radius:var(--radius-sm);font-size:13px"><div style="font-weight:600;color:var(--amber);margin-bottom:4px"><i class="ti ti-clock" style="margin-right:4px"></i>Horário de pico</div><div style="color:var(--text2)">Maior volume de vendas entre 11h e 13h.</div></div>
+    <div style="padding:12px;background:var(--blue-bg);border-radius:var(--radius-sm);font-size:13px"><div style="font-weight:600;color:var(--blue);margin-bottom:4px"><i class="ti ti-user-plus" style="margin-right:4px"></i>Fidelização</div><div style="color:var(--text2)">2 clientes sem compra há mais de 30 dias.</div></div>
+  `;
+}
+
+// IA
+async function enviarIA(prompt){
+  const input=document.getElementById('ai-input');
+  const txt=prompt||input.value.trim();
+  if(!txt)return;
+  input.value='';
+  const msgs=document.getElementById('ai-msgs');
+  msgs.innerHTML+=`<div class="ai-msg user">${txt}</div>`;
+  msgs.scrollTop=msgs.scrollHeight;
+  const loading=document.createElement('div');
+  loading.className='ai-msg bot';loading.id='ai-loading';
+  loading.innerHTML='<i class="ti ti-dots" style="animation:pulse 1s infinite"></i> Analisando...';
+  msgs.appendChild(loading);msgs.scrollTop=msgs.scrollHeight;
+  const sem=PRODUTOS.filter(p=>!precoVenda[p.id]).length;
+  const vendaT=PRODUTOS.filter(p=>precoVenda[p.id]).reduce((a,p)=>a+precoVenda[p.id]*p.qtde,0);
+  const ctx=`Você é o assistente do CaixaPRO, sistema de gestão da loja Rossatti em Ponta Porã-MS, especializada em roupas esportivas.
+Dados atuais: Pedido Woom #4334 com 67 SKUs e 85 unidades, custo total R$ 7.761,83.
+SKUs sem preço de venda: ${sem}. Venda projetada (parcial): ${vendaT>0?'R$ '+vendaT.toFixed(2):'não definida'}.
+Categorias: Camisetas (26 SKUs), Bermudas (7), Shorts (6), Regatas (7), Tops (4), Meias (4), Acessórios (6), Bonés/Viseiras (7).
+Responda de forma prática e direta em português brasileiro. Máximo 3 parágrafos.`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:ctx,messages:[{role:'user',content:txt}]})});
+    const data=await res.json();
+    document.getElementById('ai-loading').textContent=data.content?.[0]?.text||'Não foi possível obter resposta.';
+  }catch(e){
+    document.getElementById('ai-loading').textContent='Erro de conexão. Verifique sua internet.';
+  }
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function notif(msg,tipo){
+  const n=document.getElementById('notif');
+  n.textContent=msg;
+  n.style.background=tipo==='ok'?'#3B6D11':tipo==='warn'?'#854F0B':'#A32D2D';
+  n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'),3000);
+}
+
+// Fechar modais clicando fora
+document.querySelectorAll('.modal-bg').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+
+// Init
+initFiltros();
+renderTabela();
+renderStatusBar();
+</script>
+</body>
+</html>
