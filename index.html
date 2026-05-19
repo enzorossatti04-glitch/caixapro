@@ -294,7 +294,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
         <button class="btn btn-blue btn-sm" onclick="salvarPrecos()"><i class="ti ti-device-floppy"></i> Salvar</button>
       </div>
       <div class="table-wrap">
-        <table><thead><tr><th>#</th><th>Produto</th><th>Categoria</th><th>Cor / Tam</th><th style="text-align:center">Qtde</th><th>Custo</th><th>Preço Venda <span style="color:var(--red)">*</span></th><th>Margem</th></tr></thead>
+        <table><thead><tr><th>#</th><th>Produto</th><th>Categoria</th><th>Cor / Tam</th><th style="text-align:center">Estoque</th><th>Custo</th><th>Preço Venda <span style="color:var(--red)">*</span></th><th>Margem</th></tr></thead>
         <tbody id="tbody"></tbody></table>
       </div>
     </div>
@@ -530,6 +530,7 @@ function salvar(k,v){try{localStorage.setItem('cp_'+k,JSON.stringify(v))}catch(e
 function carregar(k,def){try{const v=localStorage.getItem('cp_'+k);return v!=null?JSON.parse(v):def}catch(e){return def}}
 
 let precoVenda=carregar('precos',{});
+let estoqueAtual=carregar('estoque_atual',Object.fromEntries(PRODUTOS.map(p=>[p.id,p.qtde])));
 let vendas=carregar('vendas',[]);
 let clientes=carregar('clientes',[{id:1,nome:'Ana Paula Souza',tel:'(67) 99812-3456',email:'',obs:'',compras:0},{id:2,nome:'Carlos Mendez',tel:'(67) 98765-4321',email:'',obs:'',compras:0}]);
 let caixaState=carregar('caixa',{aberto:false,abertura:null,fundo:0,operador:'',movimentacoes:[]});
@@ -617,7 +618,10 @@ function renderTabela(){
       <td><div style="font-weight:500;font-size:12px;line-height:1.4">${p.nome}</div><div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${p.cod}</div></td>
       <td><span class="badge bb">${p.cat}</span></td>
       <td style="font-size:11px;color:var(--text2)">${p.cor} · ${p.tam}</td>
-      <td style="text-align:center;font-weight:600">${p.qtde}</td>
+      <td style="text-align:center">
+      <span style="font-weight:600;color:${(estoqueAtual[p.id]||0)<=0?'var(--red)':(estoqueAtual[p.id]||0)<=2?'var(--amber)':'var(--green)'}">${estoqueAtual[p.id]||0}</span>
+      <span style="font-size:10px;color:var(--text3)">/ ${p.qtde}</span>
+    </td>
       <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text2)">${fmt(p.custo)}</td>
       <td><input type="number" class="pv-input ${pv?'ok':'vz'}" id="pv-${p.id}" value="${pv}" min="0" step="0.01" placeholder="0,00" oninput="atualizarPV(${p.id},this)"></td>
       <td style="font-weight:600;font-size:12px;${mc}">${m!=null?m+'%':'—'}</td>
@@ -640,13 +644,15 @@ function atualizarPV(id,input){
 
 function renderKpisEstoque(){
   const com=PRODUTOS.filter(p=>precoVenda[p.id]).length;
+  const esgotados=PRODUTOS.filter(p=>(estoqueAtual[p.id]||0)<=0).length;
+  const criticos=PRODUTOS.filter(p=>(estoqueAtual[p.id]||0)>0&&(estoqueAtual[p.id]||0)<=2).length;
   const sem=PRODUTOS.length-com;
   const vendaT=PRODUTOS.filter(p=>precoVenda[p.id]).reduce((a,p)=>a+precoVenda[p.id]*p.qtde,0);
   document.getElementById('kpis-estoque').innerHTML=`
-    <div class="kpi"><div class="kpi-label">Total SKUs</div><div class="kpi-value">${PRODUTOS.length}</div><div class="kpi-sub">85 unidades</div></div>
-    <div class="kpi"><div class="kpi-label">Com preço</div><div class="kpi-value" style="color:var(--green)">${com}</div><div class="kpi-sub up">de ${PRODUTOS.length}</div></div>
-    <div class="kpi"><div class="kpi-label">Sem preço</div><div class="kpi-value" style="color:var(--red)">${sem}</div><div class="kpi-sub dn">${sem>0?'pendentes':'tudo ok ✓'}</div></div>
-    <div class="kpi"><div class="kpi-label">Venda projetada</div><div class="kpi-value" style="font-size:18px">${vendaT>0?fmt(vendaT):'—'}</div><div class="kpi-sub">custo: R$ 7.762</div></div>`;
+    <div class="kpi"><div class="kpi-label">Com preço</div><div class="kpi-value" style="color:var(--green)">${com}</div><div class="kpi-sub up">de ${PRODUTOS.length} SKUs</div></div>
+    <div class="kpi"><div class="kpi-label">Sem preço</div><div class="kpi-value" style="color:var(--red)">${sem}</div><div class="kpi-sub dn">${sem>0?'pendentes':'ok ✓'}</div></div>
+    <div class="kpi"><div class="kpi-label">Esgotados</div><div class="kpi-value" style="color:var(--red)">${esgotados}</div><div class="kpi-sub dn">sem estoque</div></div>
+    <div class="kpi"><div class="kpi-label">Estoque crítico</div><div class="kpi-value" style="color:var(--amber)">${criticos}</div><div class="kpi-sub">1-2 unidades</div></div>`;
 }
 
 function renderStatusBar(){
@@ -662,7 +668,7 @@ function salvarPrecos(){salvar('precos',precoVenda);renderPDV();const sem=PRODUT
 
 function renderPDV(busca='',cat=''){
   const t=busca.toLowerCase();
-  const lista=PRODUTOS.filter(p=>precoVenda[p.id]&&(!t||[p.nome,p.cor,p.tam,p.cat].join(' ').toLowerCase().includes(t))&&(!cat||p.cat===cat));
+  const lista=PRODUTOS.filter(p=>precoVenda[p.id]&&(!t||[p.nome,p.cor,p.tam,p.cat].join(' ').toLowerCase().includes(t))&&(!cat||p.cat===cat)).sort((a,b)=>(estoqueAtual[b.id]||0)-(estoqueAtual[a.id]||0));
   const semPreco=PRODUTOS.filter(p=>!precoVenda[p.id]).length;
   document.getElementById('pdv-aviso').innerHTML=semPreco>0?`<div class="banner ban-amber" style="margin-bottom:10px"><i class="ti ti-tag-off" style="font-size:16px;flex-shrink:0"></i><span>${semPreco} produto(s) sem preço — configure em <strong>Estoque/Preços</strong>.</span></div>`:'';
   document.getElementById('pdv-grid').innerHTML=lista.length?lista.map(p=>`
@@ -670,7 +676,12 @@ function renderPDV(busca='',cat=''){
       <div class="pc-cat">${p.cat}</div>
       <div class="pc-nome">${p.nome.replace('Running Woom','').replace('Woom','').trim()}</div>
       <div class="pc-var">${p.cor} · ${p.tam}</div>
-      <div class="pc-preco">${fmt(precoVenda[p.id])}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+        <div class="pc-preco">${fmt(precoVenda[p.id])}</div>
+        <span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:99px;background:${(estoqueAtual[p.id]||0)<=0?'var(--red-bg)':(estoqueAtual[p.id]||0)<=2?'var(--amber-bg)':'var(--green-bg)'};color:${(estoqueAtual[p.id]||0)<=0?'var(--red)':(estoqueAtual[p.id]||0)<=2?'var(--amber)':'var(--green)'}">
+          ${(estoqueAtual[p.id]||0)<=0?'Esgotado':estoqueAtual[p.id]+' un.'}
+        </span>
+      </div>
     </div>`).join(''):'<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text3)">Nenhum produto com preço definido.</div>';
 }
 
@@ -680,6 +691,9 @@ function filtrarPDVCat(v){pdvCatSel=v;renderPDV(pdvBusca,v);}
 function addCarrinho(id){
   if(!caixaState.aberto){notif('Abra o caixa antes de vender!','warn');return;}
   const p=PRODUTOS.find(x=>x.id===id);
+  const saldo=estoqueAtual[id]||0;
+  const noCarrinho=(carrinho.find(x=>x.id===id)||{qty:0}).qty;
+  if(noCarrinho>=saldo){notif('Estoque insuficiente! Apenas '+saldo+' un. disponível.','warn');return;}
   const ex=carrinho.find(x=>x.id===id);
   if(ex)ex.qty++;else carrinho.push({...p,qty:1});
   renderCarrinho();
@@ -710,7 +724,12 @@ function renderCarrinho(){
   document.getElementById('c-tot').textContent=fmt(tot);
 }
 
-function chgQty(id,d){const i=carrinho.find(x=>x.id===id);i.qty+=d;if(i.qty<=0)carrinho=carrinho.filter(x=>x.id!==id);renderCarrinho();}
+function chgQty(id,d){
+  const i=carrinho.find(x=>x.id===id);
+  if(d>0){const saldo=estoqueAtual[id]||0;if(i.qty>=saldo){notif('Estoque insuficiente! Apenas '+saldo+' un.','warn');return;}}
+  i.qty+=d;if(i.qty<=0)carrinho=carrinho.filter(x=>x.id!==id);
+  renderCarrinho();
+}
 function limparCarrinho(){carrinho=[];document.getElementById('desconto-val').value='';renderCarrinho();}
 function selPgto(el,p){document.querySelectorAll('.pgto-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');pgtoAtual=p;}
 
@@ -724,6 +743,8 @@ function finalizarVenda(){
   const tot=Math.max(0,sub-desc);
   const venda={id:Date.now(),num:'#'+(vendas.length+1).toString().padStart(4,'0'),data:new Date().toISOString(),itens:carrinho.map(i=>({id:i.id,nome:i.nome,cor:i.cor,tam:i.tam,qty:i.qty,preco:precoVenda[i.id]||0})),pgto:pgtoAtual,subtotal:sub,desconto:desc,total:tot,operador:usuarioAtual.nome,status:'ok'};
   vendas.unshift(venda);salvar('vendas',vendas);
+  venda.itens.forEach(i=>{estoqueAtual[i.id]=Math.max(0,(estoqueAtual[i.id]||0)-i.qty);});
+  salvar('estoque_atual',estoqueAtual);
   caixaState.movimentacoes.push({hora:new Date().toISOString(),tipo:'entrada',desc:`Venda ${venda.num} (${pgtoAtual})`,valor:tot});
   salvar('caixa',caixaState);
   ultimaVenda=venda;
@@ -755,6 +776,9 @@ function confirmarCancelamento(){
   v.status='cancelada';
   v.cancelamento={data:new Date().toISOString(),motivo,obs,operador:usuarioAtual.nome};
   salvar('vendas',vendas);
+  v.itens.forEach(i=>{estoqueAtual[i.id]=(estoqueAtual[i.id]||0)+i.qty;});
+  salvar('estoque_atual',estoqueAtual);
+  renderPDV();
   caixaState.movimentacoes.push({hora:new Date().toISOString(),tipo:'saida',desc:`Cancelamento ${v.num} — ${motivo}`,valor:v.total});
   salvar('caixa',caixaState);
   fecharModal('modal-cancelar-venda');
@@ -1014,6 +1038,7 @@ function renderInsights(){
   const canceladas=vendas.filter(v=>v.status==='cancelada').length;
   document.getElementById('insights-box').innerHTML=`
     ${sem>0?`<div style="padding:11px;background:var(--red-bg);border-radius:var(--radius-sm);font-size:13px"><div style="font-weight:600;color:var(--red);margin-bottom:3px"><i class="ti ti-alert-circle" style="margin-right:4px"></i>Preços pendentes</div><div style="color:var(--text2)">${sem} produto(s) sem preço de venda.</div></div>`:''}
+    ${(()=>{const esg=PRODUTOS.filter(p=>(estoqueAtual[p.id]||0)<=0);return esg.length>0?`<div style="padding:11px;background:var(--red-bg);border-radius:var(--radius-sm);font-size:13px"><div style="font-weight:600;color:var(--red);margin-bottom:3px"><i class="ti ti-package-off" style="margin-right:4px"></i>Itens esgotados</div><div style="color:var(--text2)">${esg.length} produto(s) sem estoque: ${esg.slice(0,3).map(p=>p.nome.split(' ').slice(-2).join(' ')+' '+p.cor+' '+p.tam).join(', ')}${esg.length>3?'...':''}.</div></div>`:''})()}
     <div style="padding:11px;background:var(--green-bg);border-radius:var(--radius-sm);font-size:13px"><div style="font-weight:600;color:var(--green);margin-bottom:3px"><i class="ti ti-cash" style="margin-right:4px"></i>Faturamento acumulado</div><div style="color:var(--text2)">${fmt(tot)} em ${ativas.length} venda(s).</div></div>
     <div style="padding:11px;background:var(--blue-bg);border-radius:var(--radius-sm);font-size:13px"><div style="font-weight:600;color:var(--blue);margin-bottom:3px"><i class="ti ti-calendar" style="margin-right:4px"></i>Hoje</div><div style="color:var(--text2)">${hoje.length} venda(s), total ${fmt(hoje.reduce((a,v)=>a+v.total,0))}.</div></div>
     ${canceladas>0?`<div style="padding:11px;background:var(--amber-bg);border-radius:var(--radius-sm);font-size:13px"><div style="font-weight:600;color:var(--amber);margin-bottom:3px"><i class="ti ti-x" style="margin-right:4px"></i>Cancelamentos</div><div style="color:var(--text2)">${canceladas} venda(s) cancelada(s) no histórico.</div></div>`:''}
