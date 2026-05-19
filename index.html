@@ -530,7 +530,8 @@ function salvar(k,v){try{localStorage.setItem('cp_'+k,JSON.stringify(v))}catch(e
 function carregar(k,def){try{const v=localStorage.getItem('cp_'+k);return v!=null?JSON.parse(v):def}catch(e){return def}}
 
 let precoVenda=carregar('precos',{});
-let estoqueAtual=carregar('estoque_atual',Object.fromEntries(PRODUTOS.map(p=>[p.id,p.qtde])));
+let estoqueAtualRaw=carregar('estoque_atual',{});
+let estoqueAtual=Object.fromEntries(PRODUTOS.map(p=>[p.id, estoqueAtualRaw.hasOwnProperty(p.id)?Number(estoqueAtualRaw[p.id]):p.qtde]));
 let vendas=carregar('vendas',[]);
 let clientes=carregar('clientes',[{id:1,nome:'Ana Paula Souza',tel:'(67) 99812-3456',email:'',obs:'',compras:0},{id:2,nome:'Carlos Mendez',tel:'(67) 98765-4321',email:'',obs:'',compras:0}]);
 let caixaState=carregar('caixa',{aberto:false,abertura:null,fundo:0,operador:'',movimentacoes:[]});
@@ -691,8 +692,9 @@ function filtrarPDVCat(v){pdvCatSel=v;renderPDV(pdvBusca,v);}
 function addCarrinho(id){
   if(!caixaState.aberto){notif('Abra o caixa antes de vender!','warn');return;}
   const p=PRODUTOS.find(x=>x.id===id);
-  const saldo=estoqueAtual[id]||0;
+  const saldo=Number(estoqueAtual[id]||0);
   const noCarrinho=(carrinho.find(x=>x.id===id)||{qty:0}).qty;
+  if(saldo<=0){notif('Produto esgotado!','warn');return;}
   if(noCarrinho>=saldo){notif('Estoque insuficiente! Apenas '+saldo+' un. disponível.','warn');return;}
   const ex=carrinho.find(x=>x.id===id);
   if(ex)ex.qty++;else carrinho.push({...p,qty:1});
@@ -726,7 +728,7 @@ function renderCarrinho(){
 
 function chgQty(id,d){
   const i=carrinho.find(x=>x.id===id);
-  if(d>0){const saldo=estoqueAtual[id]||0;if(i.qty>=saldo){notif('Estoque insuficiente! Apenas '+saldo+' un.','warn');return;}}
+  if(d>0){const saldo=Number(estoqueAtual[id]||0);if(i.qty>=saldo){notif('Estoque insuficiente! Apenas '+saldo+' un.','warn');return;}}
   i.qty+=d;if(i.qty<=0)carrinho=carrinho.filter(x=>x.id!==id);
   renderCarrinho();
 }
@@ -744,7 +746,7 @@ function finalizarVenda(){
   const venda={id:Date.now(),num:'#'+(vendas.length+1).toString().padStart(4,'0'),data:new Date().toISOString(),itens:carrinho.map(i=>({id:i.id,nome:i.nome,cor:i.cor,tam:i.tam,qty:i.qty,preco:precoVenda[i.id]||0})),pgto:pgtoAtual,subtotal:sub,desconto:desc,total:tot,operador:usuarioAtual.nome,status:'ok'};
   vendas.unshift(venda);salvar('vendas',vendas);
   venda.itens.forEach(i=>{estoqueAtual[i.id]=Math.max(0,(estoqueAtual[i.id]||0)-i.qty);});
-  salvar('estoque_atual',estoqueAtual);
+  salvar('estoque_atual',Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
   caixaState.movimentacoes.push({hora:new Date().toISOString(),tipo:'entrada',desc:`Venda ${venda.num} (${pgtoAtual})`,valor:tot});
   salvar('caixa',caixaState);
   ultimaVenda=venda;
@@ -777,7 +779,7 @@ function confirmarCancelamento(){
   v.cancelamento={data:new Date().toISOString(),motivo,obs,operador:usuarioAtual.nome};
   salvar('vendas',vendas);
   v.itens.forEach(i=>{estoqueAtual[i.id]=(estoqueAtual[i.id]||0)+i.qty;});
-  salvar('estoque_atual',estoqueAtual);
+  salvar('estoque_atual',Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
   renderPDV();
   caixaState.movimentacoes.push({hora:new Date().toISOString(),tipo:'saida',desc:`Cancelamento ${v.num} — ${motivo}`,valor:v.total});
   salvar('caixa',caixaState);
