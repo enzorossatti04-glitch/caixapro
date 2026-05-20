@@ -171,6 +171,131 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
 @media(max-width:900px){.pdv-layout{grid-template-columns:1fr}.g4{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}}
 </style>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs, onSnapshot, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAAMUaOGK4Vb95BpDx7gI11ycF4iSRlPkI",
+    authDomain: "rossattisportshop.firebaseapp.com",
+    projectId: "rossattisportshop",
+    storageBucket: "rossattisportshop.firebasestorage.app",
+    messagingSenderId: "30267609077",
+    appId: "1:30267609077:web:86069fa05f2521b186dabc",
+    measurementId: "G-R9KM9L1RFY"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ==================== FIREBASE SYNC ====================
+  
+  // Salvar preços no Firebase
+  window.fbSalvarPrecos = async function(precos) {
+    try {
+      await setDoc(doc(db, 'loja', 'precos'), { data: precos, updated: new Date().toISOString() });
+    } catch(e) { console.error('Erro ao salvar preços:', e); }
+  };
+
+  // Carregar preços do Firebase
+  window.fbCarregarPrecos = async function() {
+    try {
+      const d = await getDoc(doc(db, 'loja', 'precos'));
+      return d.exists() ? d.data().data : {};
+    } catch(e) { return {}; }
+  };
+
+  // Salvar estoque no Firebase
+  window.fbSalvarEstoque = async function(estoque) {
+    try {
+      await setDoc(doc(db, 'loja', 'estoque'), { data: estoque, updated: new Date().toISOString() });
+    } catch(e) { console.error('Erro ao salvar estoque:', e); }
+  };
+
+  // Carregar estoque do Firebase
+  window.fbCarregarEstoque = async function() {
+    try {
+      const d = await getDoc(doc(db, 'loja', 'estoque'));
+      return d.exists() ? d.data().data : null;
+    } catch(e) { return null; }
+  };
+
+  // Salvar venda no Firebase
+  window.fbSalvarVenda = async function(venda) {
+    try {
+      await setDoc(doc(db, 'vendas', String(venda.id)), venda);
+    } catch(e) { console.error('Erro ao salvar venda:', e); }
+  };
+
+  // Carregar todas as vendas
+  window.fbCarregarVendas = async function() {
+    try {
+      const snap = await getDocs(collection(db, 'vendas'));
+      const vendas = [];
+      snap.forEach(d => vendas.push(d.data()));
+      return vendas.sort((a,b) => new Date(b.data) - new Date(a.data));
+    } catch(e) { return []; }
+  };
+
+  // Salvar clientes no Firebase
+  window.fbSalvarClientes = async function(clientes) {
+    try {
+      await setDoc(doc(db, 'loja', 'clientes'), { data: clientes, updated: new Date().toISOString() });
+    } catch(e) { console.error('Erro ao salvar clientes:', e); }
+  };
+
+  // Carregar clientes do Firebase
+  window.fbCarregarClientes = async function() {
+    try {
+      const d = await getDoc(doc(db, 'loja', 'clientes'));
+      return d.exists() ? d.data().data : null;
+    } catch(e) { return null; }
+  };
+
+  // Salvar caixa no Firebase
+  window.fbSalvarCaixa = async function(caixa) {
+    try {
+      await setDoc(doc(db, 'loja', 'caixa'), { data: caixa, updated: new Date().toISOString() });
+    } catch(e) { console.error('Erro ao salvar caixa:', e); }
+  };
+
+  // Carregar caixa do Firebase
+  window.fbCarregarCaixa = async function() {
+    try {
+      const d = await getDoc(doc(db, 'loja', 'caixa'));
+      return d.exists() ? d.data().data : null;
+    } catch(e) { return null; }
+  };
+
+  // Listener em tempo real para vendas
+  window.fbListenVendas = function(callback) {
+    return onSnapshot(collection(db, 'vendas'), (snap) => {
+      const vendas = [];
+      snap.forEach(d => vendas.push(d.data()));
+      callback(vendas.sort((a,b) => new Date(b.data) - new Date(a.data)));
+    });
+  };
+
+  // Listener em tempo real para preços
+  window.fbListenPrecos = function(callback) {
+    return onSnapshot(doc(db, 'loja', 'precos'), (d) => {
+      if(d.exists()) callback(d.data().data);
+    });
+  };
+
+  // Listener em tempo real para estoque
+  window.fbListenEstoque = function(callback) {
+    return onSnapshot(doc(db, 'loja', 'estoque'), (d) => {
+      if(d.exists()) callback(d.data().data);
+    });
+  };
+
+  // Sinaliza que Firebase está pronto
+  window.firebaseReady = true;
+  window.dispatchEvent(new Event('firebaseReady'));
+</script>
 </head>
 <body>
 
@@ -213,7 +338,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
 
 <div class="main">
   <header class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
     <div class="topbar-title" id="page-title">PDV / Frente de Caixa</div>
+    <span id="sync-badge" style="font-size:10px;padding:2px 8px;border-radius:99px;background:var(--amber-bg);color:var(--amber);font-weight:600">⟳ Conectando...</span>
+  </div>
     <div class="topbar-right" id="topbar-right"></div>
   </header>
   <main class="content">
@@ -526,7 +654,16 @@ const PRODUTOS=[
 const USUARIOS=[{user:'admin',pass:'rossatti123',nome:'Administrador'},{user:'caixa',pass:'caixa123',nome:'Operador de Caixa'}];
 const LOJA='ROSSATTI SPORTSHOP';
 
-function salvar(k,v){try{localStorage.setItem('cp_'+k,JSON.stringify(v))}catch(e){}}
+function salvar(k,v){
+  try{localStorage.setItem('cp_'+k,JSON.stringify(v))}catch(e){}
+  // Sync to Firebase
+  if(window.firebaseReady){
+    if(k==='precos') window.fbSalvarPrecos(v);
+    else if(k==='estoque_atual') window.fbSalvarEstoque(v);
+    else if(k==='clientes') window.fbSalvarClientes(v);
+    else if(k==='caixa') window.fbSalvarCaixa(v);
+  }
+}
 function carregar(k,def){try{const v=localStorage.getItem('cp_'+k);return v!=null?JSON.parse(v):def}catch(e){return def}}
 
 let precoVenda=carregar('precos',{});
@@ -558,7 +695,32 @@ function fazerLogin(){
 }
 function fazerLogout(){if(!confirm('Deseja sair?'))return;location.reload();}
 
-function initApp(){
+async function initApp(){
+  // Mostrar loading
+  document.getElementById('app').style.opacity='0.5';
+  try {
+    // Carregar dados do Firebase
+    if(window.firebaseReady || await new Promise(r=>window.addEventListener('firebaseReady',()=>r(true),{once:true}))){
+      const [fbPrecos, fbEstoque, fbVendas, fbClientes, fbCaixa] = await Promise.all([
+        window.fbCarregarPrecos(),
+        window.fbCarregarEstoque(),
+        window.fbCarregarVendas(),
+        window.fbCarregarClientes(),
+        window.fbCarregarCaixa()
+      ]);
+      if(fbPrecos && Object.keys(fbPrecos).length>0){ precoVenda=fbPrecos; localStorage.setItem('cp_precos',JSON.stringify(fbPrecos)); }
+      if(fbEstoque){ estoqueAtual=Object.fromEntries(PRODUTOS.map(p=>[p.id,Number(fbEstoque[p.id]??p.qtde)])); localStorage.setItem('cp_estoque_atual',JSON.stringify(estoqueAtual)); }
+      if(fbVendas && fbVendas.length>0){ vendas=fbVendas; localStorage.setItem('cp_vendas',JSON.stringify(fbVendas)); }
+      if(fbClientes && fbClientes.length>0){ clientes=fbClientes; localStorage.setItem('cp_clientes',JSON.stringify(fbClientes)); }
+      if(fbCaixa){ caixaState=fbCaixa; localStorage.setItem('cp_caixa',JSON.stringify(fbCaixa)); }
+
+      // Listeners em tempo real
+      window.fbListenVendas(v=>{ vendas=v; if(document.getElementById('page-historico').classList.contains('active'))renderHistorico(); if(document.getElementById('page-relatorios').classList.contains('active'))renderRelatorios(); renderInsights(); });
+      window.fbListenPrecos(p=>{ precoVenda=p; renderTabela(); renderPDV(); renderStatusBar(); });
+      window.fbListenEstoque(e=>{ estoqueAtual=Object.fromEntries(PRODUTOS.map(prod=>[prod.id,Number(e[prod.id]??prod.qtde)])); renderPDV(); renderTabela(); });
+    }
+  } catch(err){ console.warn('Firebase offline, usando localStorage:', err); }
+  document.getElementById('app').style.opacity='1';
   initFiltros();renderTabela();renderStatusBar();renderPDV();
   renderCaixaStatus();renderHistorico();renderClientes();renderInsights();atualizarTopbar('pdv');
 }
@@ -745,6 +907,7 @@ function finalizarVenda(){
   const tot=Math.max(0,sub-desc);
   const venda={id:Date.now(),num:'#'+(vendas.length+1).toString().padStart(4,'0'),data:new Date().toISOString(),itens:carrinho.map(i=>({id:i.id,nome:i.nome,cor:i.cor,tam:i.tam,qty:i.qty,preco:precoVenda[i.id]||0})),pgto:pgtoAtual,subtotal:sub,desconto:desc,total:tot,operador:usuarioAtual.nome,status:'ok'};
   vendas.unshift(venda);salvar('vendas',vendas);
+  if(window.firebaseReady) window.fbSalvarVenda(venda);
   venda.itens.forEach(i=>{estoqueAtual[i.id]=Math.max(0,(estoqueAtual[i.id]||0)-i.qty);});
   salvar('estoque_atual',Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
   caixaState.movimentacoes.push({hora:new Date().toISOString(),tipo:'entrada',desc:`Venda ${venda.num} (${pgtoAtual})`,valor:tot});
@@ -778,6 +941,7 @@ function confirmarCancelamento(){
   v.status='cancelada';
   v.cancelamento={data:new Date().toISOString(),motivo,obs,operador:usuarioAtual.nome};
   salvar('vendas',vendas);
+  if(window.firebaseReady) window.fbSalvarVenda(v);
   v.itens.forEach(i=>{estoqueAtual[i.id]=(estoqueAtual[i.id]||0)+i.qty;});
   salvar('estoque_atual',Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
   renderPDV();
@@ -1071,6 +1235,11 @@ Responda em português, prático e direto. Máx 3 parágrafos.`;
 }
 
 function fecharModal(id){document.getElementById(id).classList.remove('open');}
+window.addEventListener('firebaseReady', function(){
+  const badge = document.getElementById('sync-badge');
+  if(badge){ badge.textContent='☁ Firebase'; badge.style.background='var(--green-bg)'; badge.style.color='var(--green)'; }
+});
+
 function notif(msg,tipo){
   const n=document.getElementById('notif');n.textContent=msg;
   n.style.background=tipo==='ok'?'#3B6D11':tipo==='warn'?'#854F0B':'#A32D2D';
