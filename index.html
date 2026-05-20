@@ -347,8 +347,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
   <main class="content">
 
     <div class="page active" id="page-pdv">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)">
+          <i class="ti ti-barcode" style="font-size:18px;color:var(--blue)"></i>
+          <span>Leitor de código de barras pronto — passe o produto ou busque abaixo</span>
+        </div>
+      </div>
       <div class="toolbar">
-        <input type="text" placeholder="Buscar produto..." oninput="filtrarPDV(this.value)">
+        <input type="text" placeholder="Buscar produto ou cole/digite o código de barras..." oninput="filtrarPDV(this.value)" onkeydown="if(event.key==='Enter'){const v=this.value.trim();if(v.length>=6){processarCodigoBarras(v);this.value='';filtrarPDV('');}}" id="pdv-busca">
         <select onchange="filtrarPDVCat(this.value)" id="pdv-cat-sel"><option value="">Todas categorias</option></select>
       </div>
       <div id="pdv-aviso"></div>
@@ -1246,6 +1252,70 @@ function notif(msg,tipo){
   n.classList.add('show');setTimeout(()=>n.classList.remove('show'),3000);
 }
 document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+
+// ==================== LEITOR DE CÓDIGO DE BARRAS ====================
+(function(){
+  let buffer = '';
+  let lastKeyTime = 0;
+  const DELAY = 50; // ms entre teclas — leitor é mais rápido que humano
+
+  document.addEventListener('keydown', function(e){
+    // Ignora se estiver digitando em um input
+    const tag = document.activeElement.tagName;
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    const now = Date.now();
+
+    // Se passou muito tempo, reseta o buffer
+    if(now - lastKeyTime > 500) buffer = '';
+    lastKeyTime = now;
+
+    if(e.key === 'Enter'){
+      if(buffer.length >= 6){
+        processarCodigoBarras(buffer.trim());
+      }
+      buffer = '';
+    } else if(e.key.length === 1){
+      buffer += e.key;
+    }
+  });
+
+  // Também funciona quando o foco está na busca do PDV
+  document.addEventListener('keypress', function(e){
+    const tag = document.activeElement.tagName;
+    if(tag === 'INPUT' && document.activeElement.placeholder && document.activeElement.placeholder.includes('Buscar produto')){
+      // Se Enter foi pressionado no campo de busca com código
+      if(e.key === 'Enter'){
+        const val = document.activeElement.value.trim();
+        if(val.length >= 6){
+          processarCodigoBarras(val);
+          document.activeElement.value = '';
+        }
+      }
+    }
+  });
+
+  window.processarCodigoBarras = function(codigo){
+    // Só funciona na página PDV
+    if(!document.getElementById('page-pdv').classList.contains('active')) return;
+    if(!caixaState.aberto){ notif('Abra o caixa antes de vender!','warn'); return; }
+
+    // Busca por código exato
+    const produto = PRODUTOS.find(p => p.cod === codigo || p.cod === codigo.replace(/^0+/,''));
+
+    if(produto){
+      if(!precoVenda[produto.id]){
+        notif('Produto sem preço de venda definido!','warn');
+        return;
+      }
+      addCarrinho(produto.id);
+      // Feedback visual
+      notif(`✓ ${produto.nome} · ${produto.cor} · ${produto.tam} adicionado!`, 'ok');
+    } else {
+      notif(`Código "${codigo}" não encontrado no estoque.`, 'warn');
+    }
+  };
+})();
 </script>
 </body>
 </html>
