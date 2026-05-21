@@ -981,7 +981,7 @@ function gerarCupomHTML(v){
 }
 
 function imprimirCupom(){if(!ultimaVenda)return;document.getElementById('cupom-print').innerHTML=gerarCupomHTML(ultimaVenda);document.getElementById('cupom-print').style.display='block';setTimeout(()=>{window.print();document.getElementById('cupom-print').style.display='none';},100);}
-function imprimirCupomHist(){if(!vendaHistSel)return;const v=vendaHistSel;const linhas=[{texto:'ROSSATTI SPORTSHOP'},{texto:'Ponta Porã - MS'},{texto:'Tel: (67) 99975-1491'},{texto:'----------------------------'},{texto:'Cupom '+v.num},{texto:new Date(v.data).toLocaleString('pt-BR')},{texto:'----------------------------'},...v.itens.map(i=>({texto:i.nome.substring(0,32)+' x'+i.qty+' R$'+i.custo})),{texto:'----------------------------'},{texto:'TOTAL: R$'+fmt(v.total)},{texto:'Pagamento: '+v.pgto},{texto:'----------------------------'},{texto:'Obrigado pela preferencia!'}];fetch('http://localhost:3000/imprimir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({linhas})}).catch(()=>window.print());}{if(!vendaHistSel)return;document.getElementById('cupom-print').innerHTML=gerarCupomHTML(vendaHistSel);document.getElementById('cupom-print').style.display='block';setTimeout(()=>{window.print();document.getElementById('cupom-print').style.display='none';},100);}
+function imprimirCupomHist(){if(!vendaHistSel)return;document.getElementById('cupom-print').innerHTML=gerarCupomHTML(vendaHistSel);document.getElementById('cupom-print').style.display='block';setTimeout(()=>{window.print();document.getElementById('cupom-print').style.display='none';},100);}
 
 function renderCaixaStatus(){document.getElementById('sb-caixa').textContent=caixaState.aberto?'Aberto':'Fechado';}
 
