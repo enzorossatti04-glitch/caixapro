@@ -981,7 +981,200 @@ function gerarCupomHTML(v){
 }
 
 function imprimirCupom(){if(!ultimaVenda)return;document.getElementById('cupom-print').innerHTML=gerarCupomHTML(ultimaVenda);document.getElementById('cupom-print').style.display='block';setTimeout(()=>{window.print();document.getElementById('cupom-print').style.display='none';},100);}
-function imprimirCupomHist_orig(){if(!vendaHistSel)return;const v=vendaHistSel;const linhas=[{texto:"ROSSATTI SPORTSHOP"},{texto:"Ponta Pora - MS"},{texto:"Tel: (67) 99975-1491"},{texto:"----------------------------"},{texto:"Cupom "+v.num},{texto:new Date(v.data).toLocaleString("pt-BR")},{texto:"----------------------------"},...v.itens.map(i=>({texto:i.nome.substring(0,32)+" x"+i.qty+" RS"+i.custo})),{texto:"----------------------------"},{texto:"TOTAL: RS"+fmt(v.total)},{texto:"Pagamento: "+v.pgto},{texto:"----------------------------"},{texto:"Obrigado pela preferencia!"}];fetch("http://localhost:3000/imprimir",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linhas})}).catch(()=>window.print());}));
+function imprimirCupomHist(){if(!vendaHistSel)return;document.getElementById('cupom-print').innerHTML=gerarCupomHTML(vendaHistSel);document.getElementById('cupom-print').style.display='block';setTimeout(()=>{window.print();document.getElementById('cupom-print').style.display='none';},100);}
+
+function renderCaixaStatus(){document.getElementById('sb-caixa').textContent=caixaState.aberto?'Aberto':'Fechado';}
+
+function renderCaixaPage(){
+  const bar=document.getElementById('caixa-status-bar');
+  if(caixaState.aberto){
+    const ent=caixaState.movimentacoes.filter(m=>m.tipo==='entrada').reduce((a,m)=>a+m.valor,0);
+    const sai=caixaState.movimentacoes.filter(m=>m.tipo==='saida').reduce((a,m)=>a+m.valor,0);
+    bar.innerHTML=`<div class="caixa-status caixa-aberto"><i class="ti ti-lock-open" style="font-size:18px;flex-shrink:0"></i><span>Aberto desde ${fmtD(caixaState.abertura)} — Operador: ${caixaState.operador}</span></div>`;
+    document.getElementById('caixa-resumo-card').innerHTML=`<div class="card-title">Resumo do caixa</div>
+      <div class="res-row"><span class="res-lbl">Fundo inicial</span><span class="res-val">${fmt(caixaState.fundo)}</span></div>
+      <div class="res-row"><span class="res-lbl">Entradas</span><span class="res-val" style="color:var(--green)">${fmt(ent)}</span></div>
+      <div class="res-row"><span class="res-lbl">Saídas</span><span class="res-val" style="color:var(--red)">${fmt(sai)}</span></div>
+      <div class="res-row" style="font-weight:700"><span class="res-lbl">Saldo estimado</span><span class="res-val" style="color:var(--blue)">${fmt(caixaState.fundo+ent-sai)}</span></div>`;
+  } else {
+    bar.innerHTML=`<div class="caixa-status caixa-fechado"><i class="ti ti-lock" style="font-size:18px;flex-shrink:0"></i><span>Caixa fechado. Clique em <strong>Abrir Caixa</strong> para iniciar.</span></div>`;
+    document.getElementById('caixa-resumo-card').innerHTML=`<div class="card-title">Resumo</div><div style="color:var(--text3);font-size:13px;padding:20px 0">Nenhum caixa aberto.</div>`;
+  }
+  const movs=caixaState.movimentacoes||[];
+  document.getElementById('caixa-mov-tbody').innerHTML=movs.length?movs.map(m=>`
+    <tr><td style="font-size:11px">${new Date(m.hora).toLocaleTimeString('pt-BR')}</td>
+    <td><span class="badge ${m.tipo==='entrada'?'bg':'br'}">${m.tipo}</span></td>
+    <td style="font-size:12px">${m.desc}</td>
+    <td style="font-weight:600;color:${m.tipo==='entrada'?'var(--green)':'var(--red)'}">${m.tipo==='saida'?'-':''}${fmt(m.valor)}</td></tr>`).join('')
+    :'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:18px">Nenhuma movimentação</td></tr>';
+  atualizarTopbar('caixa');
+}
+
+function abrirCaixa(){
+  const fundo=parseFloat(document.getElementById('fundo-caixa').value)||0;
+  const op=document.getElementById('op-nome').value.trim()||usuarioAtual.nome;
+  caixaState={aberto:true,abertura:new Date().toISOString(),fundo,operador:op,movimentacoes:[]};
+  salvar('caixa',caixaState);fecharModal('modal-abrir-caixa');renderCaixaStatus();renderCaixaPage();notif('Caixa aberto!','ok');
+}
+
+function abrirModalFecharCaixa(){
+  const ent=caixaState.movimentacoes.filter(m=>m.tipo==='entrada').reduce((a,m)=>a+m.valor,0);
+  const sai=caixaState.movimentacoes.filter(m=>m.tipo==='saida').reduce((a,m)=>a+m.valor,0);
+  const saldo=caixaState.fundo+ent-sai;
+  document.getElementById('fechamento-resumo').innerHTML=`
+    <div class="res-row"><span class="res-lbl">Fundo inicial</span><span class="res-val">${fmt(caixaState.fundo)}</span></div>
+    <div class="res-row"><span class="res-lbl">Total entradas</span><span class="res-val" style="color:var(--green)">${fmt(ent)}</span></div>
+    <div class="res-row"><span class="res-lbl">Total saídas</span><span class="res-val" style="color:var(--red)">${fmt(sai)}</span></div>
+    <div class="res-row" style="font-weight:700"><span class="res-lbl">Saldo esperado</span><span class="res-val" style="color:var(--blue)">${fmt(saldo)}</span></div>`;
+  document.getElementById('modal-fechar-caixa').classList.add('open');
+  document.getElementById('diferenca-info').textContent='';
+  document.getElementById('val-fisico').value='';
+  document.getElementById('modal-fechar-caixa')._saldo=saldo;
+}
+
+function calcDiferenca(){
+  const f=parseFloat(document.getElementById('val-fisico').value)||0;
+  const e=document.getElementById('modal-fechar-caixa')._saldo||0;
+  const d=f-e;const el=document.getElementById('diferenca-info');
+  el.textContent=`Diferença: ${d>=0?'+':''}${fmt(d)}`;
+  el.style.color=d===0?'var(--green)':d>0?'var(--blue)':'var(--red)';
+}
+
+function fecharCaixa(){caixaState.aberto=false;caixaState.fechamento=new Date().toISOString();salvar('caixa',caixaState);fecharModal('modal-fechar-caixa');renderCaixaStatus();renderCaixaPage();notif('Caixa fechado!','ok');}
+
+function lancarMovimentacao(){
+  const tipo=document.getElementById('mov-tipo').value;
+  const valor=parseFloat(document.getElementById('mov-valor').value)||0;
+  const desc=document.getElementById('mov-desc').value.trim();
+  if(!valor||valor<=0){notif('Informe um valor válido','warn');return;}
+  if(!desc){notif('Informe uma descrição','warn');return;}
+  if(!caixaState.aberto){notif('Abra o caixa primeiro!','warn');return;}
+  caixaState.movimentacoes.push({hora:new Date().toISOString(),tipo,desc,valor});
+  salvar('caixa',caixaState);
+  document.getElementById('mov-valor').value='';document.getElementById('mov-desc').value='';
+  renderCaixaPage();notif('Lançado!','ok');
+}
+
+function renderHistorico(){
+  const t=ftHistTexto.toLowerCase();
+  const lista=vendas.filter(v=>{
+    const mt=!t||[v.num,v.pgto,...v.itens.map(i=>i.nome)].join(' ').toLowerCase().includes(t);
+    const mp=!ftHistPgto||v.pgto===ftHistPgto;
+    const ms=!ftHistStatus||(ftHistStatus==='cancelada'?v.status==='cancelada':v.status!=='cancelada');
+    return mt&&mp&&ms;
+  });
+  const ativas=lista.filter(v=>v.status!=='cancelada');
+  const tot=ativas.reduce((a,v)=>a+v.total,0);
+  const qtd=ativas.reduce((a,v)=>a+v.itens.reduce((b,i)=>b+i.qty,0),0);
+  document.getElementById('kpis-hist').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Vendas</div><div class="kpi-value">${ativas.length}</div><div class="kpi-sub">${vendas.filter(v=>v.status==='cancelada').length} cancelada(s)</div></div>
+    <div class="kpi"><div class="kpi-label">Itens vendidos</div><div class="kpi-value">${qtd}</div></div>
+    <div class="kpi"><div class="kpi-label">Faturamento</div><div class="kpi-value" style="font-size:18px">${fmt(tot)}</div></div>
+    <div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-value" style="font-size:18px">${ativas.length?fmt(tot/ativas.length):'—'}</div></div>`;
+  document.getElementById('hist-tbody').innerHTML=lista.length?lista.map(v=>{
+    const canc=v.status==='cancelada';
+    return `<tr class="${canc?'cancelada':''}">
+      <td style="font-family:'DM Mono',monospace;font-weight:600">${v.num}</td>
+      <td style="font-size:12px">${fmtD(v.data)}</td>
+      <td style="font-size:12px">${v.itens.reduce((a,i)=>a+i.qty,0)} itens</td>
+      <td><span class="badge bb">${v.pgto}</span></td>
+      <td style="font-size:12px">${v.desconto>0?'-'+fmt(v.desconto):'—'}</td>
+      <td style="font-weight:700">${fmt(v.total)}</td>
+      <td>${canc?`<span class="badge br">Cancelada</span>${v.cancelamento?`<div style="font-size:10px;color:var(--text3);margin-top:2px">${v.cancelamento.motivo}</div>`:''}` :'<span class="badge bg">Concluída</span>'}</td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn btn-outline btn-sm" onclick="verDetalhe('${v.id}')"><i class="ti ti-eye"></i></button>
+        <button class="btn btn-amber btn-sm" onclick="reimprimir('${v.id}')"><i class="ti ti-printer"></i></button>
+        ${!canc?`<button class="btn btn-red btn-sm" onclick="abrirCancelamento('${v.id}')" title="Cancelar venda"><i class="ti ti-x"></i></button>`:''}
+      </div></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Nenhuma venda registrada.</td></tr>';
+}
+
+function filtrarHist(v){ftHistTexto=v;renderHistorico();}
+function filtrarHistPgto(v){ftHistPgto=v;renderHistorico();}
+function filtrarHistStatus(v){ftHistStatus=v;renderHistorico();}
+
+function verDetalhe(id){
+  const v=vendas.find(x=>x.id==id);if(!v)return;
+  vendaHistSel=v;
+  const canc=v.status==='cancelada';
+  document.getElementById('detalhe-venda-content').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div><div style="font-weight:700;font-size:16px">${v.num}</div><div style="font-size:12px;color:var(--text2)">${fmtD(v.data)} · ${v.operador}</div></div>
+      <div style="display:flex;gap:6px"><span class="badge bb">${v.pgto}</span>${canc?'<span class="badge br">Cancelada</span>':'<span class="badge bg">Concluída</span>'}</div>
+    </div>
+    ${canc&&v.cancelamento?`<div class="banner ban-red" style="margin-bottom:12px"><i class="ti ti-alert-triangle" style="flex-shrink:0"></i><div>Cancelado em ${fmtD(v.cancelamento.data)}<br><strong>Motivo:</strong> ${v.cancelamento.motivo}${v.cancelamento.obs?' — '+v.cancelamento.obs:''}</div></div>`:''}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Produto</th><th>Variação</th><th style="text-align:center">Qtd</th><th>Preço</th><th>Total</th></tr></thead>
+      <tbody>${v.itens.map(i=>`<tr><td style="font-size:12px">${i.nome}</td><td style="font-size:11px;color:var(--text2)">${i.cor} · ${i.tam}</td><td style="text-align:center">${i.qty}</td><td>${fmt(i.preco)}</td><td style="font-weight:600">${fmt(i.preco*i.qty)}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <div style="margin-top:12px;text-align:right">
+      <div style="font-size:13px;color:var(--text2)">Subtotal: ${fmt(v.subtotal)}</div>
+      ${v.desconto>0?`<div style="font-size:13px;color:var(--red)">Desconto: -${fmt(v.desconto)}</div>`:''}
+      <div style="font-size:18px;font-weight:700;margin-top:4px">Total: ${fmt(v.total)}</div>
+    </div>`;
+  document.getElementById('modal-detalhe-venda').classList.add('open');
+}
+
+function reimprimir(id){const v=vendas.find(x=>x.id==id);if(!v)return;vendaHistSel=v;imprimirCupomHist();}
+
+function exportarCSV(){
+  const rows=[['Nº','Data','Status','Itens','Pagamento','Desconto','Total','Motivo Cancelamento'],...vendas.map(v=>[v.num,fmtD(v.data),v.status||'ok',v.itens.reduce((a,i)=>a+i.qty,0),v.pgto,v.desconto.toFixed(2),v.total.toFixed(2),v.cancelamento?.motivo||''])];
+  const csv=rows.map(r=>r.join(';')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='vendas_rossatti.csv';a.click();
+}
+
+function renderClientes(){
+  const cores=[['#E6F1FB','#185FA5'],['#EAF3DE','#3B6D11'],['#FAEEDA','#854F0B'],['#FCEBEB','#A32D2D']];
+  document.getElementById('clientes-count').textContent=`${clientes.length} cliente(s)`;
+  document.getElementById('clientes-grid').innerHTML=clientes.map((c,i)=>{
+    const [bg,fg]=cores[i%4];const ini=c.nome.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+    return `<div class="card" style="display:flex;flex-direction:column;gap:9px">
+      <div style="display:flex;align-items:center;gap:11px">
+        <div style="width:40px;height:40px;border-radius:50%;background:${bg};color:${fg};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">${ini}</div>
+        <div style="font-weight:600;font-size:14px">${c.nome}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text2)">
+        ${c.tel?`<div><i class="ti ti-phone" style="font-size:12px;margin-right:4px"></i>${c.tel}</div>`:''}
+        ${c.email?`<div><i class="ti ti-mail" style="font-size:12px;margin-right:4px"></i>${c.email}</div>`:''}
+        ${c.obs?`<div><i class="ti ti-note" style="font-size:12px;margin-right:4px"></i>${c.obs}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirModalCliente(){document.getElementById('modal-cliente').classList.add('open');}
+function salvarCliente(){
+  const nome=document.getElementById('nc-nome').value.trim();
+  if(!nome){notif('Informe o nome','warn');return;}
+  clientes.push({id:Date.now(),nome,tel:document.getElementById('nc-tel').value,email:document.getElementById('nc-email').value,obs:document.getElementById('nc-obs').value,compras:0});
+  salvar('clientes',clientes);renderClientes();fecharModal('modal-cliente');
+  ['nc-nome','nc-tel','nc-email','nc-obs'].forEach(id=>document.getElementById(id).value='');
+  notif('Cliente cadastrado!','ok');
+}
+
+function renderRelatorios(){
+  const ativas=vendas.filter(v=>v.status!=='cancelada');
+  const tot=ativas.reduce((a,v)=>a+v.total,0);
+  const hoje=ativas.filter(v=>new Date(v.data).toDateString()===new Date().toDateString());
+  const qtdItens=ativas.reduce((a,v)=>a+v.itens.reduce((b,i)=>b+i.qty,0),0);
+  document.getElementById('kpis-rel').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Faturamento total</div><div class="kpi-value" style="font-size:18px">${fmt(tot)}</div><div class="kpi-sub">${ativas.length} vendas</div></div>
+    <div class="kpi"><div class="kpi-label">Hoje</div><div class="kpi-value" style="font-size:18px">${fmt(hoje.reduce((a,v)=>a+v.total,0))}</div><div class="kpi-sub">${hoje.length} venda(s)</div></div>
+    <div class="kpi"><div class="kpi-label">Itens vendidos</div><div class="kpi-value">${qtdItens}</div></div>
+    <div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-value" style="font-size:18px">${ativas.length?fmt(tot/ativas.length):'—'}</div></div>`;
+  const diasMap={};
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);diasMap[d.toDateString()]=0;}
+  ativas.forEach(v=>{const k=new Date(v.data).toDateString();if(k in diasMap)diasMap[k]+=v.total;});
+  const diasArr=Object.entries(diasMap);const maxD=Math.max(...diasArr.map(d=>d[1]),1);
+  document.getElementById('chart-dias').innerHTML=diasArr.map(([d,v])=>{
+    const dt=new Date(d);const label=dt.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric'});
+    return `<div class="chart-row"><div class="chart-lbl">${label}</div><div class="chart-bg"><div class="chart-fill" style="width:${Math.round(v/maxD*100)}%"></div></div><div class="chart-val">${v>0?fmt(v):'—'}</div></div>`;
+  }).join('');
+  const pgtoMap={};ativas.forEach(v=>{pgtoMap[v.pgto]=(pgtoMap[v.pgto]||0)+v.total;});
+  const pgtoArr=Object.entries(pgtoMap).sort((a,b)=>b[1]-a[1]);const maxP=Math.max(...pgtoArr.map(p=>p[1]),1);
+  document.getElementById('chart-pgto').innerHTML=pgtoArr.length?pgtoArr.map(([p,v])=>`<div class="chart-row"><div class="chart-lbl">${p}</div><div class="chart-bg"><div class="chart-fill" style="width:${Math.round(v/maxP*100)}%;background:var(--green)"></div></div><div class="chart-val">${fmt(v)}</div></div>`).join(''):'<div style="color:var(--text3);font-size:13px;padding:16px 0">Nenhuma venda ainda</div>';
+  const catMap={};ativas.forEach(v=>v.itens.forEach(i=>{const p=PRODUTOS.find(x=>x.id===i.id);if(p){catMap[p.cat]=(catMap[p.cat]||0)+i.preco*i.qty;}}));
   const catArr=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);const maxC=Math.max(...catArr.map(c=>c[1]),1);
   document.getElementById('chart-cat').innerHTML=catArr.length?catArr.map(([c,v])=>`<div class="chart-row"><div class="chart-lbl">${c}</div><div class="chart-bg"><div class="chart-fill" style="width:${Math.round(v/maxC*100)}%;background:var(--amber)"></div></div><div class="chart-val">${fmt(v)}</div></div>`).join(''):'<div style="color:var(--text3);font-size:13px;padding:16px 0">Nenhuma venda ainda</div>';
 }
@@ -1124,5 +1317,5 @@ document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',e=
   };
 })();
 </script>
-<script>function imprimirCupomHist(){imprimirCupomHist_orig();setTimeout(function(){var cupom=document.getElementById("cupom-print");if(!cupom)return;var linhas=[];cupom.querySelectorAll("div").forEach(function(d){if(d.innerText.trim())linhas.push({texto:d.innerText.trim()});});fetch("http://localhost:3000/imprimir",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({linhas:linhas})});},800);}</script></body>
+</body>
 </html>
