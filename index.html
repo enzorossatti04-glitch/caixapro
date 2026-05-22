@@ -190,109 +190,45 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // ==================== FIREBASE SYNC ====================
-  
-  // Salvar preços no Firebase
   window.fbSalvarPrecos = async function(precos) {
-    try {
-      await setDoc(doc(db, 'loja', 'precos'), { data: precos, updated: new Date().toISOString() });
-    } catch(e) { console.error('Erro ao salvar preços:', e); }
+    try { await setDoc(doc(db, 'loja', 'precos'), { data: precos, updated: new Date().toISOString() }); } catch(e) { console.error('Erro ao salvar preços:', e); }
   };
-
-  // Carregar preços do Firebase
   window.fbCarregarPrecos = async function() {
-    try {
-      const d = await getDoc(doc(db, 'loja', 'precos'));
-      return d.exists() ? d.data().data : {};
-    } catch(e) { return {}; }
+    try { const d = await getDoc(doc(db, 'loja', 'precos')); return d.exists() ? d.data().data : {}; } catch(e) { return {}; }
   };
-
-  // Salvar estoque no Firebase
   window.fbSalvarEstoque = async function(estoque) {
-    try {
-      await setDoc(doc(db, 'loja', 'estoque'), { data: estoque, updated: new Date().toISOString() });
-    } catch(e) { console.error('Erro ao salvar estoque:', e); }
+    try { await setDoc(doc(db, 'loja', 'estoque'), { data: estoque, updated: new Date().toISOString() }); } catch(e) { console.error('Erro ao salvar estoque:', e); }
   };
-
-  // Carregar estoque do Firebase
   window.fbCarregarEstoque = async function() {
-    try {
-      const d = await getDoc(doc(db, 'loja', 'estoque'));
-      return d.exists() ? d.data().data : null;
-    } catch(e) { return null; }
+    try { const d = await getDoc(doc(db, 'loja', 'estoque')); return d.exists() ? d.data().data : null; } catch(e) { return null; }
   };
-
-  // Salvar venda no Firebase
   window.fbSalvarVenda = async function(venda) {
-    try {
-      await setDoc(doc(db, 'vendas', String(venda.id)), venda);
-    } catch(e) { console.error('Erro ao salvar venda:', e); }
+    try { await setDoc(doc(db, 'vendas', String(venda.id)), venda); } catch(e) { console.error('Erro ao salvar venda:', e); }
   };
-
-  // Carregar todas as vendas
   window.fbCarregarVendas = async function() {
-    try {
-      const snap = await getDocs(collection(db, 'vendas'));
-      const vendas = [];
-      snap.forEach(d => vendas.push(d.data()));
-      return vendas.sort((a,b) => new Date(b.data) - new Date(a.data));
-    } catch(e) { return []; }
+    try { const snap = await getDocs(collection(db, 'vendas')); const vendas = []; snap.forEach(d => vendas.push(d.data())); return vendas.sort((a,b) => new Date(b.data) - new Date(a.data)); } catch(e) { return []; }
   };
-
-  // Salvar clientes no Firebase
   window.fbSalvarClientes = async function(clientes) {
-    try {
-      await setDoc(doc(db, 'loja', 'clientes'), { data: clientes, updated: new Date().toISOString() });
-    } catch(e) { console.error('Erro ao salvar clientes:', e); }
+    try { await setDoc(doc(db, 'loja', 'clientes'), { data: clientes, updated: new Date().toISOString() }); } catch(e) { console.error('Erro ao salvar clientes:', e); }
   };
-
-  // Carregar clientes do Firebase
   window.fbCarregarClientes = async function() {
-    try {
-      const d = await getDoc(doc(db, 'loja', 'clientes'));
-      return d.exists() ? d.data().data : null;
-    } catch(e) { return null; }
+    try { const d = await getDoc(doc(db, 'loja', 'clientes')); return d.exists() ? d.data().data : null; } catch(e) { return null; }
   };
-
-  // Salvar caixa no Firebase
   window.fbSalvarCaixa = async function(caixa) {
-    try {
-      await setDoc(doc(db, 'loja', 'caixa'), { data: caixa, updated: new Date().toISOString() });
-    } catch(e) { console.error('Erro ao salvar caixa:', e); }
+    try { await setDoc(doc(db, 'loja', 'caixa'), { data: caixa, updated: new Date().toISOString() }); } catch(e) { console.error('Erro ao salvar caixa:', e); }
   };
-
-  // Carregar caixa do Firebase
   window.fbCarregarCaixa = async function() {
-    try {
-      const d = await getDoc(doc(db, 'loja', 'caixa'));
-      return d.exists() ? d.data().data : null;
-    } catch(e) { return null; }
+    try { const d = await getDoc(doc(db, 'loja', 'caixa')); return d.exists() ? d.data().data : null; } catch(e) { return null; }
   };
-
-  // Listener em tempo real para vendas
   window.fbListenVendas = function(callback) {
-    return onSnapshot(collection(db, 'vendas'), (snap) => {
-      const vendas = [];
-      snap.forEach(d => vendas.push(d.data()));
-      callback(vendas.sort((a,b) => new Date(b.data) - new Date(a.data)));
-    });
+    return onSnapshot(collection(db, 'vendas'), (snap) => { const vendas = []; snap.forEach(d => vendas.push(d.data())); callback(vendas.sort((a,b) => new Date(b.data) - new Date(a.data))); });
   };
-
-  // Listener em tempo real para preços
   window.fbListenPrecos = function(callback) {
-    return onSnapshot(doc(db, 'loja', 'precos'), (d) => {
-      if(d.exists()) callback(d.data().data);
-    });
+    return onSnapshot(doc(db, 'loja', 'precos'), (d) => { if(d.exists()) callback(d.data().data); });
   };
-
-  // Listener em tempo real para estoque
   window.fbListenEstoque = function(callback) {
-    return onSnapshot(doc(db, 'loja', 'estoque'), (d) => {
-      if(d.exists()) callback(d.data().data);
-    });
+    return onSnapshot(doc(db, 'loja', 'estoque'), (d) => { if(d.exists()) callback(d.data().data); });
   };
-
-  // Sinaliza que Firebase está pronto
   window.firebaseReady = true;
   window.dispatchEvent(new Event('firebaseReady'));
 </script>
@@ -662,7 +598,6 @@ const LOJA='ROSSATTI SPORTSHOP';
 
 function salvar(k,v){
   try{localStorage.setItem('cp_'+k,JSON.stringify(v))}catch(e){}
-  // Sync to Firebase
   if(window.firebaseReady){
     if(k==='precos') window.fbSalvarPrecos(v);
     else if(k==='estoque_atual') window.fbSalvarEstoque(v);
@@ -702,10 +637,8 @@ function fazerLogin(){
 function fazerLogout(){if(!confirm('Deseja sair?'))return;location.reload();}
 
 async function initApp(){
-  // Mostrar loading
   document.getElementById('app').style.opacity='0.5';
   try {
-    // Carregar dados do Firebase
     if(window.firebaseReady || await new Promise(r=>window.addEventListener('firebaseReady',()=>r(true),{once:true}))){
       const [fbPrecos, fbEstoque, fbVendas, fbClientes, fbCaixa] = await Promise.all([
         window.fbCarregarPrecos(),
@@ -719,8 +652,6 @@ async function initApp(){
       if(fbVendas && fbVendas.length>0){ vendas=fbVendas; localStorage.setItem('cp_vendas',JSON.stringify(fbVendas)); }
       if(fbClientes && fbClientes.length>0){ clientes=fbClientes; localStorage.setItem('cp_clientes',JSON.stringify(fbClientes)); }
       if(fbCaixa){ caixaState=fbCaixa; localStorage.setItem('cp_caixa',JSON.stringify(fbCaixa)); }
-
-      // Listeners em tempo real
       window.fbListenVendas(v=>{ vendas=v; if(document.getElementById('page-historico').classList.contains('active'))renderHistorico(); if(document.getElementById('page-relatorios').classList.contains('active'))renderRelatorios(); renderInsights(); });
       window.fbListenPrecos(p=>{ precoVenda=p; renderTabela(); renderPDV(); renderStatusBar(); });
       window.fbListenEstoque(e=>{ estoqueAtual=Object.fromEntries(PRODUTOS.map(prod=>[prod.id,Number(e[prod.id]??prod.qtde)])); renderPDV(); renderTabela(); });
@@ -816,7 +747,6 @@ function renderKpisEstoque(){
   const esgotados=PRODUTOS.filter(p=>(estoqueAtual[p.id]||0)<=0).length;
   const criticos=PRODUTOS.filter(p=>(estoqueAtual[p.id]||0)>0&&(estoqueAtual[p.id]||0)<=2).length;
   const sem=PRODUTOS.length-com;
-  const vendaT=PRODUTOS.filter(p=>precoVenda[p.id]).reduce((a,p)=>a+precoVenda[p.id]*p.qtde,0);
   document.getElementById('kpis-estoque').innerHTML=`
     <div class="kpi"><div class="kpi-label">Com preço</div><div class="kpi-value" style="color:var(--green)">${com}</div><div class="kpi-sub up">de ${PRODUTOS.length} SKUs</div></div>
     <div class="kpi"><div class="kpi-label">Sem preço</div><div class="kpi-value" style="color:var(--red)">${sem}</div><div class="kpi-sub dn">${sem>0?'pendentes':'ok ✓'}</div></div>
@@ -927,7 +857,6 @@ function finalizarVenda(){
 
 function fecharModalVenda(){fecharModal('modal-venda');ultimaVenda=null;}
 
-// CANCELAMENTO
 function abrirCancelamento(id){
   const v=vendas.find(x=>x.id==id);if(!v)return;
   if(v.status==='cancelada'){notif('Esta venda já está cancelada.','warn');return;}
@@ -981,7 +910,19 @@ function gerarCupomHTML(v){
 }
 
 function imprimirCupom(){if(!ultimaVenda)return;document.getElementById('cupom-print').innerHTML=gerarCupomHTML(ultimaVenda);document.getElementById('cupom-print').style.display='block';setTimeout(()=>{window.print();document.getElementById('cupom-print').style.display='none';},100);}
-function imprimirCupomHist(){if(!vendaHistSel)return;document.getElementById('cupom-print').innerHTML=gerarCupomHTML(vendaHistSel);document.getElementById('cupom-print').style.display='block';setTimeout(()=>{window.print();document.getElementById('cupom-print').style.display='none';},100);}
+
+function imprimirCupomHist(){
+  if(!vendaHistSel)return;
+  document.getElementById('cupom-print').innerHTML=gerarCupomHTML(vendaHistSel);
+  document.getElementById('cupom-print').style.display='block';
+  setTimeout(()=>{
+    const cupom=document.getElementById('cupom-print');
+    const linhas=Array.from(cupom.querySelectorAll('div')).map(d=>({texto:d.innerText.trim()})).filter(l=>l.texto);
+    fetch('http://localhost:3000/imprimir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({linhas:linhas})})
+    .then(()=>{cupom.style.display='none';})
+    .catch(()=>{window.print();cupom.style.display='none';});
+  },100);
+}
 
 function renderCaixaStatus(){document.getElementById('sb-caixa').textContent=caixaState.aberto?'Aberto':'Fechado';}
 
@@ -1253,67 +1194,39 @@ function notif(msg,tipo){
 }
 document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
 
-// ==================== LEITOR DE CÓDIGO DE BARRAS ====================
 (function(){
   let buffer = '';
   let lastKeyTime = 0;
-  const DELAY = 50; // ms entre teclas — leitor é mais rápido que humano
-
+  const DELAY = 50;
   document.addEventListener('keydown', function(e){
-    // Ignora se estiver digitando em um input
     const tag = document.activeElement.tagName;
     if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-
     const now = Date.now();
-
-    // Se passou muito tempo, reseta o buffer
     if(now - lastKeyTime > 500) buffer = '';
     lastKeyTime = now;
-
     if(e.key === 'Enter'){
-      if(buffer.length >= 6){
-        processarCodigoBarras(buffer.trim());
-      }
+      if(buffer.length >= 6){ processarCodigoBarras(buffer.trim()); }
       buffer = '';
-    } else if(e.key.length === 1){
-      buffer += e.key;
-    }
+    } else if(e.key.length === 1){ buffer += e.key; }
   });
-
-  // Também funciona quando o foco está na busca do PDV
   document.addEventListener('keypress', function(e){
     const tag = document.activeElement.tagName;
     if(tag === 'INPUT' && document.activeElement.placeholder && document.activeElement.placeholder.includes('Buscar produto')){
-      // Se Enter foi pressionado no campo de busca com código
       if(e.key === 'Enter'){
         const val = document.activeElement.value.trim();
-        if(val.length >= 6){
-          processarCodigoBarras(val);
-          document.activeElement.value = '';
-        }
+        if(val.length >= 6){ processarCodigoBarras(val); document.activeElement.value = ''; }
       }
     }
   });
-
   window.processarCodigoBarras = function(codigo){
-    // Só funciona na página PDV
     if(!document.getElementById('page-pdv').classList.contains('active')) return;
     if(!caixaState.aberto){ notif('Abra o caixa antes de vender!','warn'); return; }
-
-    // Busca por código exato
     const produto = PRODUTOS.find(p => p.cod === codigo || p.cod === codigo.replace(/^0+/,''));
-
     if(produto){
-      if(!precoVenda[produto.id]){
-        notif('Produto sem preço de venda definido!','warn');
-        return;
-      }
+      if(!precoVenda[produto.id]){ notif('Produto sem preço de venda definido!','warn'); return; }
       addCarrinho(produto.id);
-      // Feedback visual
       notif(`✓ ${produto.nome} · ${produto.cor} · ${produto.tam} adicionado!`, 'ok');
-    } else {
-      notif(`Código "${codigo}" não encontrado no estoque.`, 'warn');
-    }
+    } else { notif(`Código "${codigo}" não encontrado no estoque.`, 'warn'); }
   };
 })();
 </script>
