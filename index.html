@@ -980,7 +980,7 @@ function gerarCupomHTML(v){
   </div>`;
 }
 
-function imprimirCupom(){if(!ultimaVenda)return;document.getElementById('cupom-print').innerHTML=gerarCupomHTML(ultimaVenda);document.getElementById('cupom-print').style.display='block';setTimeout(()=>{window.print();cupom.style.display='none';});},100);}
+function imprimirCupom(){if(!ultimaVenda)return;document.getElementById('cupom-print').innerHTML=gerarCupomHTML(ultimaVenda);document.getElementById('cupom-print').style.display='block';setTimeout(()=>{window.print();document.getElementById('cupom-print').style.display='none';},100);}
 function imprimirCupomHist(){if(!vendaHistSel)return;document.getElementById('cupom-print').innerHTML=gerarCupomHTML(vendaHistSel);document.getElementById('cupom-print').style.display='block';setTimeout(()=>{window.print();document.getElementById('cupom-print').style.display='none';},100);}
 
 function renderCaixaStatus(){document.getElementById('sb-caixa').textContent=caixaState.aberto?'Aberto':'Fechado';}
