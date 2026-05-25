@@ -259,6 +259,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
   <div class="nav-sec">Gestão</div>
   <div class="nav-item" onclick="navTo('estoque',this)"><i class="ti ti-package"></i> Estoque / Preços</div>
   <div class="nav-item" onclick="navTo('historico',this)"><i class="ti ti-history"></i> Histórico de Vendas</div>
+  <div class="nav-item" onclick="navTo('pendentes',this)"><i class="ti ti-clock"></i> Vendas Pendentes</div>
   <div class="nav-item" onclick="navTo('clientes',this)"><i class="ti ti-users"></i> Clientes</div>
   <div class="nav-sec">Análise</div>
   <div class="nav-item" onclick="navTo('relatorios',this)"><i class="ti ti-chart-bar"></i> Relatórios</div>
@@ -319,7 +320,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
               <div class="pgto-btn" onclick="selPgto(this,'Crédito')"><i class="ti ti-credit-card"></i>Crédito</div>
               <div class="pgto-btn" onclick="selPgto(this,'Débito')"><i class="ti ti-credit-card"></i>Débito</div>
               <div class="pgto-btn" onclick="selPgto(this,'Pix')"><i class="ti ti-qrcode"></i>Pix</div>
-              <div class="pgto-btn" onclick="selPgto(this,'Fiado')"><i class="ti ti-notebook"></i>Fiado</div>
+              <div class="pgto-btn" onclick="selPgto(this,'Pendente')"><i class="ti ti-clock"></i>Pendente</div>
               <div class="pgto-btn" onclick="selPgto(this,'Outro')"><i class="ti ti-dots"></i>Outro</div>
             </div>
             <button class="btn-fin" onclick="finalizarVenda()"><i class="ti ti-check"></i> Finalizar Venda</button>
@@ -398,6 +399,17 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
         <div class="card"><div class="card-title">Por forma de pagamento</div><div id="chart-pgto"></div></div>
       </div>
       <div class="card"><div class="card-title">Por categoria</div><div id="chart-cat"></div></div>
+    </div>
+
+    <div class="page" id="page-pendentes">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="kpi-grid g3" id="kpis-pendentes" style="margin-bottom:0;flex:1"></div>
+        <button class="btn btn-blue btn-sm" style="margin-left:14px" onclick="abrirModalNovaPendente()"><i class="ti ti-plus"></i> Nova pendente</button>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>#</th><th>Cliente</th><th>Produtos</th><th>Data saída</th><th>Prazo</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="pendentes-tbody"></tbody></table>
+      </div>
     </div>
 
     <div class="page" id="page-resumo">
@@ -516,6 +528,61 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
     <div class="modal-actions">
       <button class="btn btn-outline" style="flex:1" onclick="fecharModal('modal-detalhe-venda')">Fechar</button>
       <button class="btn btn-amber" style="flex:1" id="btn-reimprimir" onclick="imprimirCupomHist()"><i class="ti ti-printer"></i> Reimprimir</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-nova-pendente">
+  <div class="modal wide">
+    <div class="modal-title"><i class="ti ti-clock" style="margin-right:6px;color:var(--amber)"></i>Nova Venda Pendente</div>
+    <div class="form-grid2">
+      <div class="form-field"><label class="form-label">Nome do cliente *</label><input type="text" id="np-cliente" placeholder="Nome do cliente"></div>
+      <div class="form-field"><label class="form-label">Telefone</label><input type="text" id="np-tel" placeholder="(67) 99999-9999"></div>
+      <div class="form-field"><label class="form-label">Prazo para retorno</label><input type="date" id="np-prazo"></div>
+      <div class="form-field"><label class="form-label">Observação</label><input type="text" id="np-obs" placeholder="Ex: leva para experimentar em casa"></div>
+    </div>
+    <div class="form-field" style="margin-top:8px"><label class="form-label">Produtos</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" id="np-busca" placeholder="Buscar produto..." oninput="filtrarProdutosPendente(this.value)" style="flex:1">
+      </div>
+      <div id="np-produtos-lista" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm)"></div>
+    </div>
+    <div id="np-carrinho-lista" style="margin-top:8px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" style="flex:1" onclick="fecharModal('modal-nova-pendente')">Cancelar</button>
+      <button class="btn btn-amber" style="flex:1" onclick="salvarPendente()"><i class="ti ti-clock"></i> Registrar pendente</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-confirmar-pendente">
+  <div class="modal">
+    <div class="modal-title"><i class="ti ti-check" style="margin-right:6px;color:var(--green)"></i>Confirmar Venda</div>
+    <div id="cp-info" style="font-size:13px;color:var(--text2);margin-bottom:14px"></div>
+    <div class="form-field"><label class="form-label">Forma de pagamento</label>
+      <div class="pgto-grid">
+        <div class="pgto-btn sel" onclick="selPgtoPendente(this,'Dinheiro')"><i class="ti ti-cash"></i>Dinheiro</div>
+        <div class="pgto-btn" onclick="selPgtoPendente(this,'Crédito')"><i class="ti ti-credit-card"></i>Crédito</div>
+        <div class="pgto-btn" onclick="selPgtoPendente(this,'Débito')"><i class="ti ti-credit-card"></i>Débito</div>
+        <div class="pgto-btn" onclick="selPgtoPendente(this,'Pix')"><i class="ti ti-qrcode"></i>Pix</div>
+        <div class="pgto-btn" onclick="selPgtoPendente(this,'Fiado')"><i class="ti ti-notebook"></i>Fiado</div>
+        <div class="pgto-btn" onclick="selPgtoPendente(this,'Outro')"><i class="ti ti-dots"></i>Outro</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" style="flex:1" onclick="fecharModal('modal-confirmar-pendente')">Cancelar</button>
+      <button class="btn btn-green" style="flex:1" onclick="confirmarPendente()"><i class="ti ti-check"></i> Confirmar venda</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-cancelar-pendente">
+  <div class="modal">
+    <div class="modal-title" style="color:var(--red)"><i class="ti ti-arrow-back" style="margin-right:6px"></i>Devolver produtos</div>
+    <div id="devolv-info" style="font-size:13px;color:var(--text2);margin-bottom:14px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" style="flex:1" onclick="fecharModal('modal-cancelar-pendente')">Cancelar</button>
+      <button class="btn btn-red" style="flex:1" onclick="devolverPendente()"><i class="ti ti-arrow-back"></i> Confirmar devolução</button>
     </div>
   </div>
 </div>
@@ -659,7 +726,7 @@ async function initApp(){
   } catch(err){ console.warn('Firebase offline, usando localStorage:', err); }
   document.getElementById('app').style.opacity='1';
   initFiltros();renderTabela();renderStatusBar();renderPDV();
-  renderCaixaStatus();renderHistorico();renderClientes();renderInsights();atualizarTopbar('pdv');
+  renderCaixaStatus();renderHistorico();renderClientes();renderPendentes();renderInsights();atualizarTopbar('pdv');
 }
 
 function navTo(page,el){
@@ -667,7 +734,7 @@ function navTo(page,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   el.classList.add('active');
-  const t={pdv:'PDV / Frente de Caixa',caixa:'Controle de Caixa',estoque:'Estoque / Preços de Venda',historico:'Histórico de Vendas',clientes:'Clientes',relatorios:'Relatórios',resumo:'Pedido Woom #4334',ia:'Assistente IA'};
+  const t={pdv:'PDV / Frente de Caixa',caixa:'Controle de Caixa',estoque:'Estoque / Preços de Venda',historico:'Histórico de Vendas',pendentes:'Vendas Pendentes',clientes:'Clientes',relatorios:'Relatórios',resumo:'Pedido Woom #4334',ia:'Assistente IA'};
   document.getElementById('page-title').textContent=t[page]||page;
   atualizarTopbar(page);
   if(page==='relatorios')renderRelatorios();
@@ -675,6 +742,7 @@ function navTo(page,el){
   if(page==='clientes')renderClientes();
   if(page==='caixa')renderCaixaPage();
   if(page==='historico')renderHistorico();
+  if(page==='pendentes')renderPendentes();
   if(page==='ia')renderInsights();
 }
 
@@ -836,6 +904,22 @@ function selPgto(el,p){document.querySelectorAll('.pgto-btn').forEach(b=>b.class
 function finalizarVenda(){
   if(!caixaState.aberto){notif('Abra o caixa antes de vender!','warn');return;}
   if(!carrinho.length){notif('Adicione itens ao carrinho!','warn');return;}
+  
+  // Se pagamento for Pendente, abre modal de pendente
+  if(pgtoAtual === 'Pendente'){
+    npCarrinho = carrinho.map(i => ({...i}));
+    document.getElementById('np-cliente').value = '';
+    document.getElementById('np-tel').value = '';
+    document.getElementById('np-obs').value = '';
+    const prazo = new Date(); prazo.setDate(prazo.getDate() + 2);
+    document.getElementById('np-prazo').value = prazo.toISOString().split('T')[0];
+    document.getElementById('np-busca').value = '';
+    filtrarProdutosPendente('');
+    renderNpCarrinho();
+    document.getElementById('modal-nova-pendente').classList.add('open');
+    return;
+  }
+  
   const sub=carrinho.reduce((a,b)=>a+(precoVenda[b.id]||0)*b.qty,0);
   const dv=parseFloat(document.getElementById('desconto-val').value)||0;
   const dt=document.getElementById('desconto-tipo').value;
@@ -1179,6 +1263,242 @@ Responda em português, prático e direto. Máx 3 parágrafos.`;
     document.getElementById('ai-loading').textContent=data.content?.[0]?.text||'Sem resposta.';
   }catch(e){document.getElementById('ai-loading').textContent='Erro de conexão.';}
   msgs.scrollTop=msgs.scrollHeight;
+}
+
+// ==================== VENDAS PENDENTES ====================
+let pendentes = carregar('pendentes', []);
+let npCarrinho = [];
+let pgtoAtualPendente = 'Dinheiro';
+let pendenteConfirmarId = null;
+let pendenteDevolverId = null;
+
+function salvarPendentes() {
+  try { localStorage.setItem('cp_pendentes', JSON.stringify(pendentes)); } catch(e) {}
+}
+
+function abrirModalNovaPendente() {
+  npCarrinho = [];
+  document.getElementById('np-cliente').value = '';
+  document.getElementById('np-tel').value = '';
+  document.getElementById('np-obs').value = '';
+  const prazo = new Date(); prazo.setDate(prazo.getDate() + 2);
+  document.getElementById('np-prazo').value = prazo.toISOString().split('T')[0];
+  document.getElementById('np-busca').value = '';
+  filtrarProdutosPendente('');
+  renderNpCarrinho();
+  document.getElementById('modal-nova-pendente').classList.add('open');
+}
+
+function filtrarProdutosPendente(busca) {
+  const t = busca.toLowerCase();
+  const lista = PRODUTOS.filter(p => precoVenda[p.id] && (estoqueAtual[p.id] || 0) > 0 &&
+    (!t || [p.nome, p.cor, p.tam, p.cat].join(' ').toLowerCase().includes(t))
+  ).slice(0, 20);
+  document.getElementById('np-produtos-lista').innerHTML = lista.length ? lista.map(p => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;cursor:pointer" onclick="addNpCarrinho(${p.id})">
+      <div>
+        <div style="font-weight:500">${p.nome.replace('Running Woom','').trim()}</div>
+        <div style="color:var(--text3)">${p.cor} · ${p.tam} · ${(estoqueAtual[p.id]||0)} un.</div>
+      </div>
+      <div style="font-weight:600;color:var(--blue)">${fmt(precoVenda[p.id])}</div>
+    </div>`).join('') : '<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">Nenhum produto encontrado</div>';
+}
+
+function addNpCarrinho(id) {
+  const p = PRODUTOS.find(x => x.id === id);
+  const saldo = Number(estoqueAtual[id] || 0);
+  const noCarrinho = (npCarrinho.find(x => x.id === id) || {qty: 0}).qty;
+  if(noCarrinho >= saldo) { notif('Estoque insuficiente!', 'warn'); return; }
+  const ex = npCarrinho.find(x => x.id === id);
+  if(ex) ex.qty++; else npCarrinho.push({...p, qty: 1});
+  renderNpCarrinho();
+}
+
+function renderNpCarrinho() {
+  const cont = document.getElementById('np-carrinho-lista');
+  if(!npCarrinho.length) { cont.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">Nenhum produto adicionado</div>'; return; }
+  const total = npCarrinho.reduce((a, i) => a + (precoVenda[i.id] || 0) * i.qty, 0);
+  cont.innerHTML = `<div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden">
+    ${npCarrinho.map(i => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px">
+        <div style="flex:1">${i.nome.split(' ').slice(-3).join(' ')} · ${i.cor} · ${i.tam}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="qty-btn" onclick="chgNpQty(${i.id},-1)">−</div>
+          <span style="font-weight:600">${i.qty}</span>
+          <div class="qty-btn" onclick="chgNpQty(${i.id},1)">+</div>
+          <div style="font-weight:600;min-width:60px;text-align:right">${fmt((precoVenda[i.id]||0)*i.qty)}</div>
+        </div>
+      </div>`).join('')}
+    <div style="padding:8px 12px;font-weight:700;font-size:13px;display:flex;justify-content:space-between">
+      <span>Total estimado</span><span>${fmt(total)}</span>
+    </div>
+  </div>`;
+}
+
+function chgNpQty(id, d) {
+  const i = npCarrinho.find(x => x.id === id);
+  if(d > 0) { const saldo = Number(estoqueAtual[id]||0); if(i.qty >= saldo){notif('Estoque insuficiente!','warn');return;} }
+  i.qty += d;
+  if(i.qty <= 0) npCarrinho = npCarrinho.filter(x => x.id !== id);
+  renderNpCarrinho();
+}
+
+function salvarPendente() {
+  const cliente = document.getElementById('np-cliente').value.trim();
+  if(!cliente) { notif('Informe o nome do cliente', 'warn'); return; }
+  if(!npCarrinho.length) { notif('Adicione pelo menos um produto', 'warn'); return; }
+  const prazo = document.getElementById('np-prazo').value;
+  const tel = document.getElementById('np-tel').value;
+  const obs = document.getElementById('np-obs').value;
+  const total = npCarrinho.reduce((a, i) => a + (precoVenda[i.id]||0)*i.qty, 0);
+
+  const pendente = {
+    id: Date.now(),
+    num: '#P' + (pendentes.length + 1).toString().padStart(3, '0'),
+    cliente, tel, obs, prazo,
+    data: new Date().toISOString(),
+    itens: npCarrinho.map(i => ({id:i.id,nome:i.nome,cor:i.cor,tam:i.tam,qty:i.qty,preco:precoVenda[i.id]||0})),
+    total,
+    status: 'pendente',
+    operador: usuarioAtual.nome
+  };
+
+  // Baixa estoque
+  pendente.itens.forEach(i => { estoqueAtual[i.id] = Math.max(0, (estoqueAtual[i.id]||0) - i.qty); });
+  salvar('estoque_atual', Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
+  renderPDV();
+
+  pendentes.unshift(pendente);
+  salvarPendentes();
+  fecharModal('modal-nova-pendente');
+  // Limpa o carrinho se veio do PDV
+  if(carrinho.length && carrinho.every(c => pendente.itens.some(i => i.id === c.id))) {
+    limparCarrinho();
+  }
+  renderPendentes();
+  notif(`Pendente ${pendente.num} registrada! Estoque baixado.`, 'ok');
+}
+
+function renderPendentes() {
+  const ativas = pendentes.filter(p => p.status === 'pendente');
+  const confirmadas = pendentes.filter(p => p.status === 'confirmada');
+  const devolvidas = pendentes.filter(p => p.status === 'devolvida');
+  const hoje = new Date().toDateString();
+  const vencidas = ativas.filter(p => p.prazo && new Date(p.prazo).toDateString() < hoje);
+
+  document.getElementById('kpis-pendentes').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Em aberto</div><div class="kpi-value" style="color:var(--amber)">${ativas.length}</div><div class="kpi-sub">${vencidas.length > 0 ? `<span style="color:var(--red)">${vencidas.length} vencida(s)</span>` : 'em dia'}</div></div>
+    <div class="kpi"><div class="kpi-label">Confirmadas</div><div class="kpi-value" style="color:var(--green)">${confirmadas.length}</div><div class="kpi-sub up">${fmt(confirmadas.reduce((a,p)=>a+p.total,0))}</div></div>
+    <div class="kpi"><div class="kpi-label">Devolvidas</div><div class="kpi-value" style="color:var(--text3)">${devolvidas.length}</div></div>`;
+
+  document.getElementById('pendentes-tbody').innerHTML = pendentes.length ? pendentes.map(p => {
+    const vencida = p.status === 'pendente' && p.prazo && new Date(p.prazo) < new Date();
+    const statusBadge = p.status === 'pendente'
+      ? `<span class="badge ba">${vencida ? '⚠ Vencida' : 'Pendente'}</span>`
+      : p.status === 'confirmada' ? '<span class="badge bg">Confirmada</span>'
+      : '<span class="badge br">Devolvida</span>';
+    return `<tr>
+      <td style="font-family:'DM Mono',monospace;font-weight:600">${p.num}</td>
+      <td><div style="font-weight:500">${p.cliente}</div>${p.tel?`<div style="font-size:11px;color:var(--text3)">${p.tel}</div>`:''}</td>
+      <td style="font-size:12px">${p.itens.reduce((a,i)=>a+i.qty,0)} itens</td>
+      <td style="font-size:12px">${new Date(p.data).toLocaleDateString('pt-BR')}</td>
+      <td style="font-size:12px;${vencida?'color:var(--red);font-weight:600':''}">${p.prazo ? new Date(p.prazo+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+      <td style="font-weight:700">${fmt(p.total)}</td>
+      <td>${statusBadge}</td>
+      <td><div style="display:flex;gap:5px">
+        ${p.status==='pendente'?`
+          <button class="btn btn-green btn-sm" onclick="abrirConfirmarPendente('${p.id}')" title="Confirmar venda"><i class="ti ti-check"></i></button>
+          <button class="btn btn-red btn-sm" onclick="abrirDevolverPendente('${p.id}')" title="Devolver"><i class="ti ti-arrow-back"></i></button>`:''}
+      </div></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Nenhuma venda pendente registrada.</td></tr>';
+}
+
+function abrirConfirmarPendente(id) {
+  const p = pendentes.find(x => x.id == id);
+  if(!p) return;
+  pendenteConfirmarId = id;
+  document.getElementById('cp-info').innerHTML = `
+    <div style="padding:10px;background:var(--green-bg);border-radius:var(--radius-sm)">
+      <strong>${p.num}</strong> · ${p.cliente}<br>
+      ${p.itens.map(i=>`${i.nome.substring(0,25)} ${i.cor} ${i.tam} x${i.qty}`).join('<br>')}<br>
+      <strong>Total: ${fmt(p.total)}</strong>
+    </div>`;
+  document.querySelectorAll('#modal-confirmar-pendente .pgto-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelector('#modal-confirmar-pendente .pgto-btn').classList.add('sel');
+  pgtoAtualPendente = 'Dinheiro';
+  document.getElementById('modal-confirmar-pendente').classList.add('open');
+}
+
+function selPgtoPendente(el, p) {
+  document.querySelectorAll('#modal-confirmar-pendente .pgto-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  pgtoAtualPendente = p;
+}
+
+function confirmarPendente() {
+  const p = pendentes.find(x => x.id == pendenteConfirmarId);
+  if(!p) return;
+  p.status = 'confirmada';
+  p.pgto = pgtoAtualPendente;
+  p.dataConfirmacao = new Date().toISOString();
+
+  // Cria venda normal
+  const venda = {
+    id: Date.now(),
+    num: '#'+(vendas.length+1).toString().padStart(4,'0'),
+    data: new Date().toISOString(),
+    itens: p.itens,
+    pgto: pgtoAtualPendente,
+    subtotal: p.total,
+    desconto: 0,
+    total: p.total,
+    operador: usuarioAtual.nome,
+    status: 'ok',
+    obs: `Pendente ${p.num} - ${p.cliente}`
+  };
+  vendas.unshift(venda);
+  salvar('vendas', vendas);
+  if(window.firebaseReady) window.fbSalvarVenda(venda);
+
+  caixaState.movimentacoes.push({hora:new Date().toISOString(),tipo:'entrada',desc:`Venda pendente ${p.num} confirmada (${pgtoAtualPendente}) - ${p.cliente}`,valor:p.total});
+  salvar('caixa', caixaState);
+
+  salvarPendentes();
+  fecharModal('modal-confirmar-pendente');
+  renderPendentes();
+  renderHistorico();
+  notif(`Venda ${p.num} confirmada!`, 'ok');
+}
+
+function abrirDevolverPendente(id) {
+  const p = pendentes.find(x => x.id == id);
+  if(!p) return;
+  pendenteDevolverId = id;
+  document.getElementById('devolv-info').innerHTML = `
+    <div style="padding:10px;background:var(--red-bg);border-radius:var(--radius-sm)">
+      <strong>${p.num}</strong> · ${p.cliente}<br>
+      ${p.itens.map(i=>`${i.nome.substring(0,25)} ${i.cor} ${i.tam} x${i.qty}`).join('<br>')}<br>
+      Os produtos voltarão ao estoque.
+    </div>`;
+  document.getElementById('modal-cancelar-pendente').classList.add('open');
+}
+
+function devolverPendente() {
+  const p = pendentes.find(x => x.id == pendenteDevolverId);
+  if(!p) return;
+  p.status = 'devolvida';
+  p.dataDevolucao = new Date().toISOString();
+
+  // Devolve ao estoque
+  p.itens.forEach(i => { estoqueAtual[i.id] = (estoqueAtual[i.id]||0) + i.qty; });
+  salvar('estoque_atual', Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
+  renderPDV();
+
+  salvarPendentes();
+  fecharModal('modal-cancelar-pendente');
+  renderPendentes();
+  notif(`Produtos de ${p.num} devolvidos ao estoque.`, 'ok');
 }
 
 function fecharModal(id){document.getElementById(id).classList.remove('open');}
