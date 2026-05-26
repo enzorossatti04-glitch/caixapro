@@ -532,6 +532,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
   </div>
 </div>
 
+<div class="modal-bg" id="modal-detalhe-pendente">
+  <div class="modal wide">
+    <div class="modal-title"><i class="ti ti-clock" style="margin-right:6px;color:var(--amber)"></i>Detalhes da pendente</div>
+    <div id="dp-info" style="margin-bottom:14px"></div>
+    <div id="dp-itens" style="margin-bottom:14px"></div>
+    <div id="dp-acoes" style="display:flex;gap:8px;margin-top:18px"></div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-nova-pendente">
   <div class="modal wide">
     <div class="modal-title"><i class="ti ti-clock" style="margin-right:6px;color:var(--amber)"></i>Nova Venda Pendente</div>
@@ -1407,11 +1416,142 @@ function renderPendentes() {
       <td>${statusBadge}</td>
       <td><div style="display:flex;gap:5px">
         ${p.status==='pendente'?`
+          <button class="btn btn-outline btn-sm" onclick="verDetalhesPendente('${p.id}')" title="Ver detalhes"><i class="ti ti-eye"></i></button>
           <button class="btn btn-green btn-sm" onclick="abrirConfirmarPendente('${p.id}')" title="Confirmar venda"><i class="ti ti-check"></i></button>
-          <button class="btn btn-red btn-sm" onclick="abrirDevolverPendente('${p.id}')" title="Devolver"><i class="ti ti-arrow-back"></i></button>`:''}
+          <button class="btn btn-red btn-sm" onclick="abrirDevolverPendente('${p.id}')" title="Devolver"><i class="ti ti-arrow-back"></i></button>`:`
+          <button class="btn btn-outline btn-sm" onclick="verDetalhesPendente('${p.id}')" title="Ver detalhes"><i class="ti ti-eye"></i></button>`}
       </div></td>
     </tr>`;
   }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Nenhuma venda pendente registrada.</td></tr>';
+}
+
+function verDetalhesPendente(id) {
+  const p = pendentes.find(x => x.id == id);
+  if(!p) return;
+  
+  const canEdit = p.status === 'pendente';
+  const statusLabel = p.status === 'confirmada' ? '<span class="badge bg">Confirmada</span>' : p.status === 'devolvida' ? '<span class="badge br">Devolvida</span>' : '<span class="badge ba">Pendente</span>';
+  
+  document.getElementById('dp-info').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div><div style="font-weight:700;font-size:16px">${p.num}</div><div style="font-size:12px;color:var(--text2)">${p.cliente}${p.tel?' · '+p.tel:''}</div></div>
+      ${statusLabel}
+    </div>
+    <div style="font-size:12px;color:var(--text2)">Saiu em: ${new Date(p.data).toLocaleDateString('pt-BR')} · Prazo: ${p.prazo ? new Date(p.prazo+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
+    ${p.obs ? `<div style="font-size:12px;color:var(--text2);margin-top:4px">Obs: ${p.obs}</div>` : ''}`;
+
+  document.getElementById('dp-itens').innerHTML = `
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:8px">
+      ${canEdit ? 'Selecione o que fazer com cada item:' : 'Itens:'}
+    </div>
+    <div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden">
+      ${p.itens.map((it, idx) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px" id="dp-item-${idx}">
+          ${canEdit ? `
+            <div style="display:flex;gap:6px">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--green);color:var(--green);background:var(--green-bg)">
+                <input type="radio" name="dp-acao-${idx}" value="vender" checked onchange="atualizarResumoDetalhe('${id}')"> Vender
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--red);color:var(--red);background:var(--red-bg)">
+                <input type="radio" name="dp-acao-${idx}" value="devolver" onchange="atualizarResumoDetalhe('${id}')"> Devolver
+              </label>
+            </div>` : ''}
+          <div style="flex:1">
+            <div style="font-weight:500">${it.nome.substring(0,35)}</div>
+            <div style="font-size:11px;color:var(--text2)">${it.cor} · ${it.tam} · ${it.qty} un.</div>
+          </div>
+          <div style="font-weight:600">${fmt(it.preco * it.qty)}</div>
+        </div>`).join('')}
+      <div style="padding:10px 14px;display:flex;justify-content:space-between;font-weight:700;font-size:13px">
+        <span>Total</span><span>${fmt(p.total)}</span>
+      </div>
+    </div>
+    ${canEdit ? `<div id="dp-resumo" style="margin-top:10px;font-size:12px;color:var(--text2)"></div>` : ''}`;
+
+  if(canEdit) {
+    document.getElementById('dp-acoes').innerHTML = `
+      <button class="btn btn-outline" style="flex:1" onclick="fecharModal('modal-detalhe-pendente')">Fechar</button>
+      <button class="btn btn-amber" style="flex:1" onclick="confirmarParcialPendente('${id}')"><i class="ti ti-check"></i> Confirmar seleção</button>`;
+    atualizarResumoDetalhe(id);
+  } else {
+    document.getElementById('dp-acoes').innerHTML = `<button class="btn btn-outline" style="flex:1" onclick="fecharModal('modal-detalhe-pendente')">Fechar</button>`;
+  }
+
+  document.getElementById('modal-detalhe-pendente').classList.add('open');
+}
+
+function atualizarResumoDetalhe(id) {
+  const p = pendentes.find(x => x.id == id);
+  if(!p) return;
+  const resumo = document.getElementById('dp-resumo');
+  if(!resumo) return;
+  
+  let vender = [], devolver = [];
+  p.itens.forEach((it, idx) => {
+    const radio = document.querySelector(`input[name="dp-acao-${idx}"]:checked`);
+    if(radio && radio.value === 'devolver') devolver.push(it);
+    else vender.push(it);
+  });
+  
+  const totalVenda = vender.reduce((a, i) => a + i.preco * i.qty, 0);
+  resumo.innerHTML = `<span style="color:var(--green)">✓ ${vender.length} item(ns) para vender: ${fmt(totalVenda)}</span>${devolver.length ? ` &nbsp;·&nbsp; <span style="color:var(--red)">↩ ${devolver.length} item(ns) para devolver</span>` : ''}`;
+}
+
+function confirmarParcialPendente(id) {
+  const p = pendentes.find(x => x.id == id);
+  if(!p) return;
+
+  let itensVender = [], itensDevolver = [];
+  p.itens.forEach((it, idx) => {
+    const radio = document.querySelector(`input[name="dp-acao-${idx}"]:checked`);
+    if(radio && radio.value === 'devolver') itensDevolver.push(it);
+    else itensVender.push(it);
+  });
+
+  // Devolve os itens marcados para devolver
+  itensDevolver.forEach(i => { estoqueAtual[i.id] = (estoqueAtual[i.id]||0) + i.qty; });
+
+  // Cria venda normal com os itens vendidos
+  if(itensVender.length > 0) {
+    const totalVenda = itensVender.reduce((a, i) => a + i.preco * i.qty, 0);
+    const venda = {
+      id: Date.now(),
+      num: '#'+(vendas.length+1).toString().padStart(4,'0'),
+      data: new Date().toISOString(),
+      itens: itensVender,
+      pgto: 'Dinheiro',
+      subtotal: totalVenda,
+      desconto: 0,
+      total: totalVenda,
+      operador: usuarioAtual.nome,
+      status: 'ok',
+      obs: `Pendente ${p.num} - ${p.cliente}`
+    };
+    vendas.unshift(venda);
+    salvar('vendas', vendas);
+    if(window.firebaseReady) window.fbSalvarVenda(venda);
+    caixaState.movimentacoes.push({hora:new Date().toISOString(),tipo:'entrada',desc:`Pendente ${p.num} confirmada parcialmente - ${p.cliente}`,valor:totalVenda});
+    salvar('caixa', caixaState);
+  }
+
+  salvar('estoque_atual', Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
+  renderPDV();
+
+  p.status = 'confirmada';
+  p.pgto = 'Dinheiro';
+  p.dataConfirmacao = new Date().toISOString();
+  p.itensVendidos = itensVender;
+  p.itensDevolvidos = itensDevolver;
+
+  salvarPendentes();
+  fecharModal('modal-detalhe-pendente');
+  renderPendentes();
+  renderHistorico();
+
+  const msg = itensDevolver.length > 0 
+    ? `${itensVender.length} item(ns) vendido(s), ${itensDevolver.length} devolvido(s) ao estoque.`
+    : `Todos os itens confirmados como vendidos.`;
+  notif(msg, 'ok');
 }
 
 function abrirConfirmarPendente(id) {
