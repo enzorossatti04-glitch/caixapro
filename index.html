@@ -379,7 +379,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
         <button class="btn btn-outline btn-sm" onclick="exportarCSV()"><i class="ti ti-download"></i> CSV</button>
       </div>
       <div class="table-wrap">
-        <table><thead><tr><th>#</th><th>Data/Hora</th><th>Itens</th><th>Pagamento</th><th>Desconto</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
+        <table><thead><tr><th>#</th><th>Data/Hora</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th>Desconto</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody id="hist-tbody"></tbody></table>
       </div>
     </div>
@@ -450,7 +450,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
     <div style="font-size:48px;color:var(--green);margin-bottom:10px"><i class="ti ti-circle-check"></i></div>
     <div style="font-size:18px;font-weight:700;margin-bottom:5px">Venda finalizada!</div>
     <div id="mv-pgto" style="font-size:13px;color:var(--text2);margin-bottom:4px"></div>
-    <div id="mv-total" style="font-size:30px;font-weight:700;color:var(--blue);margin-bottom:18px"></div>
+    <div id="mv-total" style="font-size:30px;font-weight:700;color:var(--blue);margin-bottom:12px"></div>
+    <div style="text-align:left;margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px">Nome do cliente (opcional)</label>
+      <input type="text" id="mv-cliente" placeholder="Ex: João Silva" style="width:100%">
+    </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-amber" style="flex:1" onclick="imprimirCupom()"><i class="ti ti-printer"></i> Imprimir</button>
       <button class="btn btn-blue" style="flex:1" onclick="fecharModalVenda()"><i class="ti ti-plus"></i> Nova venda</button>
@@ -948,7 +952,19 @@ function finalizarVenda(){
   limparCarrinho();renderHistorico();
 }
 
-function fecharModalVenda(){fecharModal('modal-venda');ultimaVenda=null;}
+function fecharModalVenda(){
+  if(ultimaVenda) {
+    const nomeCliente = document.getElementById('mv-cliente').value.trim();
+    if(nomeCliente) {
+      ultimaVenda.cliente = nomeCliente;
+      salvar('vendas', vendas);
+      if(window.firebaseReady) window.fbSalvarVenda(ultimaVenda);
+    }
+    document.getElementById('mv-cliente').value = '';
+  }
+  fecharModal('modal-venda');
+  ultimaVenda=null;
+}
 
 function abrirCancelamento(id){
   const v=vendas.find(x=>x.id==id);if(!v)return;
@@ -1110,6 +1126,7 @@ function renderHistorico(){
     return `<tr class="${canc?'cancelada':''}">
       <td style="font-family:'DM Mono',monospace;font-weight:600">${v.num}</td>
       <td style="font-size:12px">${fmtD(v.data)}</td>
+      <td style="font-size:12px">${v.cliente || '<span style="color:var(--text3)">—</span>'}</td>
       <td style="font-size:12px">${v.itens.reduce((a,i)=>a+i.qty,0)} itens</td>
       <td><span class="badge bb">${v.pgto}</span></td>
       <td style="font-size:12px">${v.desconto>0?'-'+fmt(v.desconto):'—'}</td>
@@ -1121,7 +1138,7 @@ function renderHistorico(){
         ${!canc?`<button class="btn btn-red btn-sm" onclick="abrirCancelamento('${v.id}')" title="Cancelar venda"><i class="ti ti-x"></i></button>`:''}
       </div></td>
     </tr>`;
-  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Nenhuma venda registrada.</td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px">Nenhuma venda registrada.</td></tr>';
 }
 
 function filtrarHist(v){ftHistTexto=v;renderHistorico();}
@@ -1134,7 +1151,7 @@ function verDetalhe(id){
   const canc=v.status==='cancelada';
   document.getElementById('detalhe-venda-content').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div><div style="font-weight:700;font-size:16px">${v.num}</div><div style="font-size:12px;color:var(--text2)">${fmtD(v.data)} · ${v.operador}</div></div>
+      <div><div style="font-weight:700;font-size:16px">${v.num}</div><div style="font-size:12px;color:var(--text2)">${fmtD(v.data)} · ${v.operador}${v.cliente?' · <strong>'+v.cliente+'</strong>':''}</div></div>
       <div style="display:flex;gap:6px"><span class="badge bb">${v.pgto}</span>${canc?'<span class="badge br">Cancelada</span>':'<span class="badge bg">Concluída</span>'}</div>
     </div>
     ${canc&&v.cancelamento?`<div class="banner ban-red" style="margin-bottom:12px"><i class="ti ti-alert-triangle" style="flex-shrink:0"></i><div>Cancelado em ${fmtD(v.cancelamento.data)}<br><strong>Motivo:</strong> ${v.cancelamento.motivo}${v.cancelamento.obs?' — '+v.cancelamento.obs:''}</div></div>`:''}
@@ -1455,6 +1472,9 @@ function verDetalhesPendente(id) {
               <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--red);color:var(--red);background:var(--red-bg)">
                 <input type="radio" name="dp-acao-${idx}" value="devolver" onchange="atualizarResumoDetalhe('${id}')"> Devolver
               </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--amber);color:var(--amber);background:var(--amber-bg)">
+                <input type="radio" name="dp-acao-${idx}" value="pendente" onchange="atualizarResumoDetalhe('${id}')"> Pendente
+              </label>
             </div>` : ''}
           <div style="flex:1">
             <div style="font-weight:500">${it.nome.substring(0,35)}</div>
@@ -1486,25 +1506,31 @@ function atualizarResumoDetalhe(id) {
   const resumo = document.getElementById('dp-resumo');
   if(!resumo) return;
   
-  let vender = [], devolver = [];
+  let vender = [], devolver = [], pendente = [];
   p.itens.forEach((it, idx) => {
     const radio = document.querySelector(`input[name="dp-acao-${idx}"]:checked`);
     if(radio && radio.value === 'devolver') devolver.push(it);
+    else if(radio && radio.value === 'pendente') pendente.push(it);
     else vender.push(it);
   });
   
   const totalVenda = vender.reduce((a, i) => a + i.preco * i.qty, 0);
-  resumo.innerHTML = `<span style="color:var(--green)">✓ ${vender.length} item(ns) para vender: ${fmt(totalVenda)}</span>${devolver.length ? ` &nbsp;·&nbsp; <span style="color:var(--red)">↩ ${devolver.length} item(ns) para devolver</span>` : ''}`;
+  let txt = [];
+  if(vender.length) txt.push(`<span style="color:var(--green)">✓ ${vender.length} vender: ${fmt(totalVenda)}</span>`);
+  if(devolver.length) txt.push(`<span style="color:var(--red)">↩ ${devolver.length} devolver</span>`);
+  if(pendente.length) txt.push(`<span style="color:var(--amber)">⏳ ${pendente.length} continua pendente</span>`);
+  resumo.innerHTML = txt.join(' &nbsp;·&nbsp; ');
 }
 
 function confirmarParcialPendente(id) {
   const p = pendentes.find(x => x.id == id);
   if(!p) return;
 
-  let itensVender = [], itensDevolver = [];
+  let itensVender = [], itensDevolver = [], itensPendente = [];
   p.itens.forEach((it, idx) => {
     const radio = document.querySelector(`input[name="dp-acao-${idx}"]:checked`);
     if(radio && radio.value === 'devolver') itensDevolver.push(it);
+    else if(radio && radio.value === 'pendente') itensPendente.push(it);
     else itensVender.push(it);
   });
 
@@ -1537,21 +1563,30 @@ function confirmarParcialPendente(id) {
   salvar('estoque_atual', Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
   renderPDV();
 
-  p.status = 'confirmada';
-  p.pgto = 'Dinheiro';
-  p.dataConfirmacao = new Date().toISOString();
-  p.itensVendidos = itensVender;
-  p.itensDevolvidos = itensDevolver;
+  // Se ainda tem itens pendentes, atualiza a pendente com apenas esses itens
+  if(itensPendente.length > 0) {
+    p.itens = itensPendente;
+    p.total = itensPendente.reduce((a, i) => a + i.preco * i.qty, 0);
+    p.itensVendidos = itensVender;
+    p.itensDevolvidos = itensDevolver;
+  } else {
+    p.status = 'confirmada';
+    p.pgto = 'Dinheiro';
+    p.dataConfirmacao = new Date().toISOString();
+    p.itensVendidos = itensVender;
+    p.itensDevolvidos = itensDevolver;
+  }
 
   salvarPendentes();
   fecharModal('modal-detalhe-pendente');
   renderPendentes();
   renderHistorico();
 
-  const msg = itensDevolver.length > 0 
-    ? `${itensVender.length} item(ns) vendido(s), ${itensDevolver.length} devolvido(s) ao estoque.`
-    : `Todos os itens confirmados como vendidos.`;
-  notif(msg, 'ok');
+  let msgs = [];
+  if(itensVender.length) msgs.push(`${itensVender.length} vendido(s)`);
+  if(itensDevolver.length) msgs.push(`${itensDevolver.length} devolvido(s)`);
+  if(itensPendente.length) msgs.push(`${itensPendente.length} continua(m) pendente(s)`);
+  notif(msgs.join(', ') + '.', 'ok');
 }
 
 function abrirConfirmarPendente(id) {
