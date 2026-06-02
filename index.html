@@ -220,6 +220,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
   window.fbCarregarCaixa = async function() {
     try { const d = await getDoc(doc(db, 'loja', 'caixa')); return d.exists() ? d.data().data : null; } catch(e) { return null; }
   };
+  window.fbSalvarPendentes = async function(pendentes) {
+    try { await setDoc(doc(db, 'loja', 'pendentes'), { data: pendentes, updated: new Date().toISOString() }); } catch(e) { console.error('Erro ao salvar pendentes:', e); }
+  };
+  window.fbCarregarPendentes = async function() {
+    try { const d = await getDoc(doc(db, 'loja', 'pendentes')); return d.exists() ? d.data().data : null; } catch(e) { return null; }
+  };
+  window.fbListenPendentes = function(callback) {
+    return onSnapshot(doc(db, 'loja', 'pendentes'), (d) => { if(d.exists()) callback(d.data().data); });
+  };
   window.fbListenVendas = function(callback) {
     return onSnapshot(collection(db, 'vendas'), (snap) => { const vendas = []; snap.forEach(d => vendas.push(d.data())); callback(vendas.sort((a,b) => new Date(b.data) - new Date(a.data))); });
   };
@@ -720,21 +729,24 @@ async function initApp(){
   document.getElementById('app').style.opacity='0.5';
   try {
     if(window.firebaseReady || await new Promise(r=>window.addEventListener('firebaseReady',()=>r(true),{once:true}))){
-      const [fbPrecos, fbEstoque, fbVendas, fbClientes, fbCaixa] = await Promise.all([
+      const [fbPrecos, fbEstoque, fbVendas, fbClientes, fbCaixa, fbPendentes] = await Promise.all([
         window.fbCarregarPrecos(),
         window.fbCarregarEstoque(),
         window.fbCarregarVendas(),
         window.fbCarregarClientes(),
-        window.fbCarregarCaixa()
+        window.fbCarregarCaixa(),
+        window.fbCarregarPendentes()
       ]);
       if(fbPrecos && Object.keys(fbPrecos).length>0){ precoVenda=fbPrecos; localStorage.setItem('cp_precos',JSON.stringify(fbPrecos)); }
       if(fbEstoque){ estoqueAtual=Object.fromEntries(PRODUTOS.map(p=>[p.id,Number(fbEstoque[p.id]??p.qtde)])); localStorage.setItem('cp_estoque_atual',JSON.stringify(estoqueAtual)); }
       if(fbVendas && fbVendas.length>0){ vendas=fbVendas; localStorage.setItem('cp_vendas',JSON.stringify(fbVendas)); }
       if(fbClientes && fbClientes.length>0){ clientes=fbClientes; localStorage.setItem('cp_clientes',JSON.stringify(fbClientes)); }
       if(fbCaixa){ caixaState=fbCaixa; localStorage.setItem('cp_caixa',JSON.stringify(fbCaixa)); }
+      if(fbPendentes && fbPendentes.length>0){ pendentes=fbPendentes; localStorage.setItem('cp_pendentes',JSON.stringify(fbPendentes)); }
       window.fbListenVendas(v=>{ vendas=v; if(document.getElementById('page-historico').classList.contains('active'))renderHistorico(); if(document.getElementById('page-relatorios').classList.contains('active'))renderRelatorios(); renderInsights(); });
       window.fbListenPrecos(p=>{ precoVenda=p; renderTabela(); renderPDV(); renderStatusBar(); });
       window.fbListenEstoque(e=>{ estoqueAtual=Object.fromEntries(PRODUTOS.map(prod=>[prod.id,Number(e[prod.id]??prod.qtde)])); renderPDV(); renderTabela(); });
+      window.fbListenPendentes(p=>{ pendentes=p; localStorage.setItem('cp_pendentes',JSON.stringify(p)); if(document.getElementById('page-pendentes').classList.contains('active'))renderPendentes(); });
     }
   } catch(err){ console.warn('Firebase offline, usando localStorage:', err); }
   document.getElementById('app').style.opacity='1';
@@ -1300,6 +1312,7 @@ let pendenteDevolverId = null;
 
 function salvarPendentes() {
   try { localStorage.setItem('cp_pendentes', JSON.stringify(pendentes)); } catch(e) {}
+  if(window.firebaseReady) window.fbSalvarPendentes(pendentes);
 }
 
 function abrirModalNovaPendente() {
