@@ -226,6 +226,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
   window.fbCarregarPendentes = async function() {
     try { const d = await getDoc(doc(db, 'loja', 'pendentes')); return d.exists() ? d.data().data : null; } catch(e) { return null; }
   };
+  window.fbCarregarFlag = async function(flagId) {
+    try { const d = await getDoc(doc(db, 'loja', 'flags')); return d.exists() ? !!(d.data().data||{})[flagId] : false; } catch(e) { return false; }
+  };
+  window.fbSalvarFlag = async function(flagId, valor) {
+    try {
+      const ref = doc(db, 'loja', 'flags');
+      const d = await getDoc(ref);
+      const atual = d.exists() ? (d.data().data||{}) : {};
+      atual[flagId] = valor;
+      await setDoc(ref, { data: atual, updated: new Date().toISOString() });
+    } catch(e) { console.error('Erro ao salvar flag:', e); }
+  };
   window.fbListenPendentes = function(callback) {
     return onSnapshot(doc(db, 'loja', 'pendentes'), (d) => { if(d.exists()) callback(d.data().data); });
   };
@@ -364,7 +376,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
 
     <div class="page" id="page-estoque">
       <div class="banner ban-amber"><i class="ti ti-pencil" style="font-size:18px;flex-shrink:0;margin-top:1px"></i>
-        <span>Orçamento Woom #4334 importado. Preencha o <strong>Preço de Venda</strong> — campos vermelhos = sem preço. Dados salvos automaticamente.</span>
+        <span>Pedidos Woom #4334 e #4350 importados. Preencha o <strong>Preço de Venda</strong> — campos vermelhos = sem preço. Dados salvos automaticamente.</span>
       </div>
       <div class="kpi-grid g4" id="kpis-estoque"></div>
       <div class="toolbar">
@@ -425,7 +437,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
       <div class="kpi-grid g3" id="kpis-resumo"></div>
       <div class="two-col" style="margin-top:14px">
         <div class="card"><div class="card-title">Por categoria</div><div id="resumo-cats"></div></div>
-        <div class="card"><div class="card-title">Dados do pedido</div><div id="resumo-pedido"></div></div>
+        <div class="card"><div class="card-title">Dados dos pedidos</div><div id="resumo-pedido"></div></div>
       </div>
     </div>
 
@@ -437,7 +449,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
           <div class="ai-chips">
             <div class="ai-chip" onclick="enviarIA('Quais produtos ainda não têm preço de venda?')">Sem preço</div>
             <div class="ai-chip" onclick="enviarIA('Resuma o desempenho de vendas registradas')">Resumo vendas</div>
-            <div class="ai-chip" onclick="enviarIA('Analise as margens do pedido Woom')">Margens</div>
+            <div class="ai-chip" onclick="enviarIA('Analise as margens dos pedidos Woom')">Margens</div>
             <div class="ai-chip" onclick="enviarIA('Dicas para aumentar o ticket médio')">Ticket médio</div>
           </div>
           <div class="ai-inp-row">
@@ -655,15 +667,15 @@ const PRODUTOS=[
   {id:39,nome:'Shorts Running Woom Marathon Masculino',cod:'1038151911424',cat:'Shorts',cor:'Preto',tam:'GG',qtde:1,custo:138.83},
   {id:40,nome:'Shorts Running Woom Marathon Masculino',cod:'1038151911324',cat:'Shorts',cor:'Preto',tam:'G',qtde:1,custo:138.83},
   {id:41,nome:'Shorts Running 2em1 Woom Marathon Masculino',cod:'1039151911424',cat:'Shorts',cor:'Preto',tam:'GG',qtde:1,custo:166.61},
-  {id:42,nome:'Manguito Woom GearLab Unissex',cod:'1051271931425',cat:'Acessórios',cor:'Preto',tam:'GG',qtde:1,custo:83.27},
+  {id:42,nome:'Manguito Woom GearLab Unissex',cod:'1051271931425',cat:'Acessórios',cor:'Preto',tam:'GG',qtde:4,custo:83.27},
   {id:43,nome:'Manguito Woom GearLab Unissex',cod:'1051271931325',cat:'Acessórios',cor:'Preto',tam:'G',qtde:2,custo:83.27},
   {id:44,nome:'Manguito Woom GearLab Unissex',cod:'1051271331225',cat:'Acessórios',cor:'Branco',tam:'M',qtde:1,custo:83.27},
-  {id:45,nome:'Manguito Woom GearLab Unissex',cod:'1051271331325',cat:'Acessórios',cor:'Branco',tam:'G',qtde:1,custo:83.27},
+  {id:45,nome:'Manguito Woom GearLab Unissex',cod:'1051271331325',cat:'Acessórios',cor:'Branco',tam:'G',qtde:4,custo:83.27},
   {id:46,nome:'Porta Número Running Woom Basic Black Unissex',cod:'1035152431624',cat:'Acessórios',cor:'Preto',tam:'Único',qtde:3,custo:38.83},
   {id:47,nome:'Meia Cano Alto Woom GearLab Feminino',cod:'1032275832424',cat:'Meias',cor:'Preto e Azul',tam:'34-38',qtde:2,custo:44.38},
   {id:48,nome:'Meia Cano Alto Woom GearLab Feminino',cod:'1032271632424',cat:'Meias',cor:'Lilás',tam:'34-38',qtde:2,custo:44.38},
-  {id:49,nome:'Meia Cano Alto Woom GearLab Feminino',cod:'1032271932424',cat:'Meias',cor:'Preto',tam:'34-38',qtde:4,custo:44.38},
-  {id:50,nome:'Meia Cano Alto Woom GearLab Masculino',cod:'1032271332324',cat:'Meias',cor:'Branco',tam:'39-44',qtde:2,custo:44.38},
+  {id:49,nome:'Meia Cano Alto Woom GearLab Feminino',cod:'1032271932424',cat:'Meias',cor:'Preto',tam:'34-38',qtde:5,custo:44.38},
+  {id:50,nome:'Meia Cano Alto Woom GearLab Masculino',cod:'1032271332324',cat:'Meias',cor:'Branco',tam:'39-44',qtde:6,custo:44.38},
   {id:51,nome:'Viseira Running Woom Light Run Unissex',cod:'1044151331624',cat:'Bonés/Viseiras',cor:'Branco',tam:'Único',qtde:1,custo:66.61},
   {id:52,nome:'Boné Running Woom AeroFast Unissex',cod:'16846484846',cat:'Bonés/Viseiras',cor:'Zebra',tam:'Único',qtde:1,custo:94.38},
   {id:53,nome:'Boné Running Woom AeroFast Unissex',cod:'1052159831626',cat:'Bonés/Viseiras',cor:'Sunset',tam:'Único',qtde:1,custo:94.38},
@@ -681,10 +693,64 @@ const PRODUTOS=[
   {id:65,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151911324',cat:'Camisetas',cor:'Preto',tam:'G',qtde:1,custo:83.28},
   {id:66,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151411324',cat:'Camisetas',cor:'Chumbo',tam:'G',qtde:3,custo:83.28},
   {id:67,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017156211324',cat:'Camisetas',cor:'Azul Royal',tam:'G',qtde:1,custo:83.28},
+  {id:68,nome:'Meia Cano Alto Woom GearLab Feminino',cod:'1032271332424',cat:'Meias',cor:'Branco',tam:'34-38',qtde:6,custo:44.38},
+  {id:69,nome:'Regata Running Woom Light Run Feminina',cod:'1036152221024',cat:'Regatas',cor:'Verde',tam:'PP',qtde:1,custo:72.17},
+  {id:70,nome:'Regata Running Woom Light Run Feminina',cod:'1036152021024',cat:'Regatas',cor:'Rosa',tam:'PP',qtde:1,custo:72.17},
+  {id:71,nome:'Regata Running Woom Light Run Feminina',cod:'1036151921024',cat:'Regatas',cor:'Preto',tam:'PP',qtde:2,custo:72.17},
+  {id:72,nome:'Regata Running Woom Light Run Feminina',cod:'1036151321024',cat:'Regatas',cor:'Branco',tam:'PP',qtde:2,custo:72.17},
+  {id:73,nome:'Regata Running Woom Light Run Feminina',cod:'1036151121024',cat:'Regatas',cor:'Azul',tam:'PP',qtde:1,custo:72.17},
+  {id:74,nome:'Regata Running Woom Light Run Feminina',cod:'1036152221124',cat:'Regatas',cor:'Verde',tam:'P',qtde:2,custo:72.17},
+  {id:75,nome:'Regata Running Woom Light Run Feminina',cod:'1036151121124',cat:'Regatas',cor:'Azul',tam:'P',qtde:2,custo:72.17},
+  {id:76,nome:'Regata Running Woom Light Run Feminina',cod:'1036151921124',cat:'Regatas',cor:'Preto',tam:'P',qtde:2,custo:72.17},
+  {id:77,nome:'Regata Running Woom Light Run Feminina',cod:'1036151321124',cat:'Regatas',cor:'Branco',tam:'P',qtde:2,custo:72.17},
+  {id:78,nome:'Regata Running Woom Light Run Feminina',cod:'1036151921224',cat:'Regatas',cor:'Preto',tam:'M',qtde:2,custo:72.17},
+  {id:79,nome:'Regata Running Woom Light Run Feminina',cod:'1036151321224',cat:'Regatas',cor:'Branco',tam:'M',qtde:2,custo:72.17},
+  {id:80,nome:'Regata Running Woom Light Run Feminina',cod:'1036151121224',cat:'Regatas',cor:'Azul',tam:'M',qtde:2,custo:72.17},
+  {id:81,nome:'Regata Running Woom Light Run Feminina',cod:'1036151921324',cat:'Regatas',cor:'Preto',tam:'G',qtde:1,custo:72.17},
+  {id:82,nome:'Regata Running Woom Light Run Feminina',cod:'1036151321324',cat:'Regatas',cor:'Branco',tam:'G',qtde:1,custo:72.17},
+  {id:83,nome:'Camisa Segunda Pele Woom Winter Feminina',cod:'1014251321125',cat:'Segunda Pele',cor:'Branco',tam:'P',qtde:2,custo:111.05},
+  {id:84,nome:'Camisa Segunda Pele Woom Winter Feminina',cod:'1014251321025',cat:'Segunda Pele',cor:'Branco',tam:'PP',qtde:1,custo:111.05},
+  {id:85,nome:'Segunda Pele Woom Feminina',cod:'1014211621124',cat:'Segunda Pele',cor:'Lilás',tam:'P',qtde:1,custo:111.05},
+  {id:86,nome:'Meia Cano Alto Woom GearLab Feminino',cod:'1032271232424',cat:'Meias',cor:'Azul Marinho',tam:'34-38',qtde:2,custo:44.38},
+  {id:87,nome:'Manguito Woom GearLab Unissex',cod:'1051271331425',cat:'Acessórios',cor:'Branco',tam:'GG',qtde:3,custo:83.27},
+  {id:88,nome:'Bermuda Running Series Woom Boston Feminino',cod:'1004155721124',cat:'Bermudas',cor:'Preto e Lilás',tam:'P',qtde:2,custo:166.61},
+  {id:89,nome:'Bermuda Running Series Woom Tokyo Feminino',cod:'1004155521224',cat:'Bermudas',cor:'Preto e Coral',tam:'M',qtde:2,custo:166.61},
+  {id:90,nome:'Bermuda Running Series Woom Boston Feminino',cod:'1004155721224',cat:'Bermudas',cor:'Preto e Lilás',tam:'M',qtde:2,custo:166.61},
+  {id:91,nome:'Top Running Light Run Woom',cod:'14041521411813200',cat:'Tops',cor:'Preto',tam:'G',qtde:1,custo:111.05},
+  {id:92,nome:'Top Running Light Run Woom',cod:'14031521411812200',cat:'Tops',cor:'Preto',tam:'M',qtde:2,custo:111.05},
+  {id:93,nome:'Top Running Light Run Woom',cod:'14021521411811200',cat:'Tops',cor:'Preto',tam:'P',qtde:2,custo:111.05},
+  {id:94,nome:'Top Running Light Run Woom',cod:'14011521411810200',cat:'Tops',cor:'Preto',tam:'PP',qtde:2,custo:111.05},
+  {id:95,nome:'Top Running Woom Marathon Feminino',cod:'1041151921024',cat:'Tops',cor:'Preto',tam:'PP',qtde:2,custo:111.06},
+  {id:96,nome:'Bermuda Running Series Woom Chicago Feminino',cod:'15081041511813200',cat:'Bermudas',cor:'Preto',tam:'G',qtde:1,custo:194.38},
+  {id:97,nome:'Bermuda Running Series Woom Chicago Feminino',cod:'15061041511811200',cat:'Bermudas',cor:'Preto',tam:'P',qtde:3,custo:194.38},
+  {id:98,nome:'Bermuda Running Series Woom New York Feminino',cod:'15181041510213200',cat:'Bermudas',cor:'Azul Marinho',tam:'G',qtde:1,custo:194.38},
+  {id:99,nome:'Bermuda Running Series Woom New York Feminino',cod:'15171041510212200',cat:'Bermudas',cor:'Azul Marinho',tam:'M',qtde:2,custo:194.38},
+  {id:100,nome:'Bermuda Running Series Woom New York Feminino',cod:'15161041510211200',cat:'Bermudas',cor:'Azul Marinho',tam:'P',qtde:3,custo:194.38},
+  {id:101,nome:'Top Running Series Woom Azul Feminino',cod:'15481521510113200',cat:'Tops',cor:'Azul',tam:'G',qtde:1,custo:149.94},
+  {id:102,nome:'Top Running Series Woom Azul Feminino',cod:'15471521510112200',cat:'Tops',cor:'Azul',tam:'M',qtde:2,custo:149.94},
+  {id:103,nome:'Top Running Series Woom Azul Feminino',cod:'15461521510111200',cat:'Tops',cor:'Azul',tam:'P',qtde:2,custo:149.94},
+  {id:104,nome:'Calça Running Woom Marathon Feminina',cod:'1011152221124',cat:'Calças',cor:'Verde',tam:'P',qtde:2,custo:194.39},
+  {id:105,nome:'Calça Running Woom Marathon Feminina',cod:'1011152221224',cat:'Calças',cor:'Verde',tam:'M',qtde:2,custo:194.39},
+  {id:106,nome:'Calça Running Woom Marathon Feminina',cod:'1011152221324',cat:'Calças',cor:'Verde',tam:'G',qtde:1,custo:194.39},
+  {id:107,nome:'Top Running Series Woom Verde Feminino',cod:'15431521512013200',cat:'Tops',cor:'Verde',tam:'G',qtde:1,custo:149.94},
+  {id:108,nome:'Top Running Series Woom Verde Feminino',cod:'15421521512012200',cat:'Tops',cor:'Verde',tam:'M',qtde:2,custo:149.94},
+  {id:109,nome:'Top Running Series Woom Verde Feminino',cod:'15411521512011200',cat:'Tops',cor:'Verde',tam:'P',qtde:2,custo:149.94},
+  {id:110,nome:'Top Running Series Woom Verde Feminino',cod:'15401521512010200',cat:'Tops',cor:'Verde',tam:'PP',qtde:1,custo:149.94},
+  {id:111,nome:'Bermuda Running Series Woom Berlim Feminino',cod:'15101041512010200',cat:'Bermudas',cor:'Verde',tam:'PP',qtde:1,custo:194.38},
+  {id:112,nome:'Bermuda Running Series Woom Berlim Feminino',cod:'15131041512013200',cat:'Bermudas',cor:'Verde',tam:'G',qtde:1,custo:194.38},
+  {id:113,nome:'Bermuda Running Series Woom Berlim Feminino',cod:'15121041512012200',cat:'Bermudas',cor:'Verde',tam:'M',qtde:2,custo:194.38},
+  {id:114,nome:'Bermuda Running Series Woom Berlim Feminino',cod:'15111041512011200',cat:'Bermudas',cor:'Verde',tam:'P',qtde:2,custo:194.38},
 ];
 const USUARIOS=[{user:'admin',pass:'rossatti123',nome:'Administrador'},{user:'caixa',pass:'caixa123',nome:'Operador de Caixa'}];
 const LOJA='ROSSATTI SPORTSHOP';
 
+// Reposição de estoque do pedido Woom #4350 para SKUs já existentes (IDs 1-67).
+// O qtde acima já está com o total NOVO; estes deltas representam só o que CHEGOU agora,
+// para somar em cima do estoqueAtual já descontado por vendas (não substituir).
+const RECONCILIACAO_4350={
+  flagId: 'reconciliacao_4350',
+  deltas: {28:2, 42:3, 45:3, 49:4, 50:5}
+};
 function salvar(k,v){
   try{localStorage.setItem('cp_'+k,JSON.stringify(v))}catch(e){}
   if(window.firebaseReady){
@@ -725,6 +791,23 @@ function fazerLogin(){
 }
 function fazerLogout(){if(!confirm('Deseja sair?'))return;location.reload();}
 
+async function reconciliarEstoque4350(){
+  if(!window.firebaseReady) return;
+  try{
+    const jaRodou = await window.fbCarregarFlag(RECONCILIACAO_4350.flagId);
+    if(jaRodou) return;
+    Object.entries(RECONCILIACAO_4350.deltas).forEach(([id,delta])=>{
+      const pid=Number(id);
+      estoqueAtual[pid]=(Number(estoqueAtual[pid])||0)+delta;
+    });
+    const estoqueLimpo=Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)]));
+    salvar('estoque_atual',estoqueLimpo);
+    await window.fbSalvarFlag(RECONCILIACAO_4350.flagId,true);
+    const total=Object.values(RECONCILIACAO_4350.deltas).reduce((a,b)=>a+b,0);
+    notif(`Reposição #4350 conciliada: +${total} un. em 5 produtos.`,'ok');
+  }catch(e){ console.warn('Reconciliação 4350 falhou:',e); }
+}
+
 async function initApp(){
   document.getElementById('app').style.opacity='0.5';
   try {
@@ -749,6 +832,7 @@ async function initApp(){
       window.fbListenPendentes(p=>{ pendentes=p; localStorage.setItem('cp_pendentes',JSON.stringify(p)); if(document.getElementById('page-pendentes').classList.contains('active'))renderPendentes(); });
     }
   } catch(err){ console.warn('Firebase offline, usando localStorage:', err); }
+  await reconciliarEstoque4350();
   document.getElementById('app').style.opacity='1';
   initFiltros();renderTabela();renderStatusBar();renderPDV();
   renderCaixaStatus();renderHistorico();renderClientes();renderPendentes();renderInsights();atualizarTopbar('pdv');
@@ -759,7 +843,7 @@ function navTo(page,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   el.classList.add('active');
-  const t={pdv:'PDV / Frente de Caixa',caixa:'Controle de Caixa',estoque:'Estoque / Preços de Venda',historico:'Histórico de Vendas',pendentes:'Vendas Pendentes',clientes:'Clientes',relatorios:'Relatórios',resumo:'Pedido Woom #4334',ia:'Assistente IA'};
+  const t={pdv:'PDV / Frente de Caixa',caixa:'Controle de Caixa',estoque:'Estoque / Preços de Venda',historico:'Histórico de Vendas',pendentes:'Vendas Pendentes',clientes:'Clientes',relatorios:'Relatórios',resumo:'Pedidos Woom #4334 + #4350',ia:'Assistente IA'};
   document.getElementById('page-title').textContent=t[page]||page;
   atualizarTopbar(page);
   if(page==='relatorios')renderRelatorios();
@@ -925,12 +1009,10 @@ function chgQty(id,d){
 }
 function limparCarrinho(){carrinho=[];document.getElementById('desconto-val').value='';renderCarrinho();}
 function selPgto(el,p){document.querySelectorAll('.pgto-btn').forEach(b=>b.classList.remove('sel'));el.classList.add('sel');pgtoAtual=p;}
-
 function finalizarVenda(){
   if(!caixaState.aberto){notif('Abra o caixa antes de vender!','warn');return;}
   if(!carrinho.length){notif('Adicione itens ao carrinho!','warn');return;}
   
-  // Se pagamento for Pendente, abre modal de pendente
   if(pgtoAtual === 'Pendente'){
     npCarrinho = carrinho.map(i => ({...i}));
     document.getElementById('np-cliente').value = '';
@@ -950,7 +1032,7 @@ function finalizarVenda(){
   const dt=document.getElementById('desconto-tipo').value;
   const desc=dt==='%'?sub*dv/100:Math.min(dv,sub);
   const tot=Math.max(0,sub-desc);
-  const venda={id:Date.now(),num:'#'+(vendas.length+1).toString().padStart(4,'0'),data:new Date().toISOString(),itens:carrinho.map(i=>({id:i.id,nome:i.nome,cor:i.cor,tam:i.tam,qty:i.qty,preco:precoVenda[i.id]||0})),pgto:pgtoAtual,subtotal:sub,desconto:desc,total:tot,operador:usuarioAtual.nome,status:'ok'};
+  const venda={id:Date.now(),num:'#'+(vendas.length+1).toString().padStart(4,'0'),data:new Date().toISOString(),itens:carrinho.map(i=>({id:i.id,nome:i.nome,cor:i.cor,tam:i.tam,qty:i.qty,preco:precoVenda[i.id]||0})),pgto:pgtoAtual,subtotal:sub,desconto:desc,total:tot,operador:usuarioAtual.nome,status:'ok',cliente:''};
   vendas.unshift(venda);salvar('vendas',vendas);
   if(window.firebaseReady) window.fbSalvarVenda(venda);
   venda.itens.forEach(i=>{estoqueAtual[i.id]=Math.max(0,(estoqueAtual[i.id]||0)-i.qty);});
@@ -960,6 +1042,7 @@ function finalizarVenda(){
   ultimaVenda=venda;
   document.getElementById('mv-pgto').textContent=pgtoAtual;
   document.getElementById('mv-total').textContent=fmt(tot);
+  document.getElementById('mv-cliente').value='';
   document.getElementById('modal-venda').classList.add('open');
   limparCarrinho();renderHistorico();
 }
@@ -967,14 +1050,13 @@ function finalizarVenda(){
 function fecharModalVenda(){
   if(ultimaVenda) {
     const nomeCliente = document.getElementById('mv-cliente').value.trim();
-    if(nomeCliente) {
-      ultimaVenda.cliente = nomeCliente;
-      salvar('vendas', vendas);
-      if(window.firebaseReady) window.fbSalvarVenda(ultimaVenda);
-    }
+    ultimaVenda.cliente = nomeCliente;
+    salvar('vendas', vendas);
+    if(window.firebaseReady) window.fbSalvarVenda(ultimaVenda);
     document.getElementById('mv-cliente').value = '';
   }
   fecharModal('modal-venda');
+  renderHistorico();
   ultimaVenda=null;
 }
 
@@ -1017,6 +1099,7 @@ function gerarCupomHTML(v){
     ${cancelada?'<div style="text-align:center;font-weight:bold;color:red;border:2px solid red;padding:4px;margin-bottom:8px">*** CANCELADO ***</div>':''}
     <div style="border-top:1px dashed #000;margin-bottom:8px"></div>
     <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;margin-bottom:8px"><span>Cupom ${v.num}</span><span>${new Date(v.data).toLocaleString('pt-BR')}</span></div>
+    ${v.cliente?`<div style="font-size:11px;color:#555;margin-bottom:8px">Cliente: ${v.cliente}</div>`:''}
     <div style="border-top:1px dashed #000;margin-bottom:8px"></div>
     ${v.itens.map(i=>`<div style="margin-bottom:5px"><div>${i.nome.substring(0,32)}</div><div style="display:flex;justify-content:space-between"><span style="color:#555">${i.cor} ${i.tam} x${i.qty}</span><span style="font-weight:bold">${fmt(i.preco*i.qty)}</span></div></div>`).join('')}
     <div style="border-top:1px dashed #000;margin:8px 0"></div>
@@ -1116,11 +1199,10 @@ function lancarMovimentacao(){
   document.getElementById('mov-valor').value='';document.getElementById('mov-desc').value='';
   renderCaixaPage();notif('Lançado!','ok');
 }
-
 function renderHistorico(){
   const t=ftHistTexto.toLowerCase();
   const lista=vendas.filter(v=>{
-    const mt=!t||[v.num,v.pgto,...v.itens.map(i=>i.nome)].join(' ').toLowerCase().includes(t);
+    const mt=!t||[v.num,v.pgto,v.cliente||'',...v.itens.map(i=>i.nome)].join(' ').toLowerCase().includes(t);
     const mp=!ftHistPgto||v.pgto===ftHistPgto;
     const ms=!ftHistStatus||(ftHistStatus==='cancelada'?v.status==='cancelada':v.status!=='cancelada');
     return mt&&mp&&ms;
@@ -1182,7 +1264,7 @@ function verDetalhe(id){
 function reimprimir(id){const v=vendas.find(x=>x.id==id);if(!v)return;vendaHistSel=v;imprimirCupomHist();}
 
 function exportarCSV(){
-  const rows=[['Nº','Data','Status','Itens','Pagamento','Desconto','Total','Motivo Cancelamento'],...vendas.map(v=>[v.num,fmtD(v.data),v.status||'ok',v.itens.reduce((a,i)=>a+i.qty,0),v.pgto,v.desconto.toFixed(2),v.total.toFixed(2),v.cancelamento?.motivo||''])];
+  const rows=[['Nº','Data','Cliente','Status','Itens','Pagamento','Desconto','Total','Motivo Cancelamento'],...vendas.map(v=>[v.num,fmtD(v.data),v.cliente||'',v.status||'ok',v.itens.reduce((a,i)=>a+i.qty,0),v.pgto,v.desconto.toFixed(2),v.total.toFixed(2),v.cancelamento?.motivo||''])];
   const csv=rows.map(r=>r.join(';')).join('\n');
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='vendas_rossatti.csv';a.click();
 }
@@ -1247,21 +1329,32 @@ function renderResumo(){
   PRODUTOS.forEach(p=>{if(!catMap[p.cat])catMap[p.cat]={qtde:0,custo:0,skus:0};catMap[p.cat].qtde+=p.qtde;catMap[p.cat].custo+=p.custo*p.qtde;catMap[p.cat].skus++;});
   const bgs=['bb','bg','ba','br'];let bi=0;
   document.getElementById('resumo-cats').innerHTML=Object.entries(catMap).map(([cat,d])=>`<div class="res-row"><span><span class="badge ${bgs[bi++%4]}">${cat}</span></span><span style="color:var(--text3);font-size:11px">${d.skus} SKUs · ${d.qtde} un.</span><span class="res-val">${fmt(d.custo)}</span></div>`).join('');
+
+  // Pedido #4334: 67 SKUs, 85 un, custo R$7.761,83
+  // Pedido #4350: 47 SKUs novos + reposição de 5 SKUs, 102 un total, valor liquido R$10.966,74
   const custT=PRODUTOS.reduce((a,p)=>a+p.custo*p.qtde,0);
   const vendaT=PRODUTOS.filter(p=>precoVenda[p.id]).reduce((a,p)=>a+precoVenda[p.id]*p.qtde,0);
   const lucro=vendaT-custT;
+  const totalSkus=PRODUTOS.length;
+  const totalUn=PRODUTOS.reduce((a,p)=>a+p.qtde,0);
+  const custoPedidoA=7761.83;
+  const custoPedidoB=10966.74;
+  const custoSomado=custoPedidoA+custoPedidoB;
+
   document.getElementById('resumo-pedido').innerHTML=`
     <div class="res-row"><span class="res-lbl">Fornecedor</span><span class="res-val">Woom</span></div>
-    <div class="res-row"><span class="res-lbl">Orçamento</span><span class="res-val">#4334</span></div>
-    <div class="res-row"><span class="res-lbl">Emissão</span><span class="res-val">14/05/2026</span></div>
+    <div class="res-row"><span class="res-lbl">Pedido #4334</span><span class="res-val">${fmt(custoPedidoA)} · 14/05/2026</span></div>
+    <div class="res-row"><span class="res-lbl">Pedido #4350</span><span class="res-val">${fmt(custoPedidoB)} · 25/05/2026</span></div>
     <div class="res-row"><span class="res-lbl">Vendedor</span><span class="res-val">Frederico Fagundes</span></div>
-    <div class="res-row"><span class="res-lbl">Total unidades</span><span class="res-val">85</span></div>
-    <div class="res-row"><span class="res-lbl">Custo total</span><span class="res-val">${fmt(custT)}</span></div>
+    <div class="res-row"><span class="res-lbl">Total SKUs</span><span class="res-val">${totalSkus}</span></div>
+    <div class="res-row"><span class="res-lbl">Total unidades</span><span class="res-val">${totalUn}</span></div>
+    <div class="res-row" style="font-weight:700"><span class="res-lbl">Custo somado</span><span class="res-val">${fmt(custoSomado)}</span></div>
     <div class="res-row"><span class="res-lbl">Venda projetada</span><span class="res-val" style="color:var(--blue)">${vendaT>0?fmt(vendaT):'—'}</span></div>
     ${vendaT>0?`<div class="res-row"><span class="res-lbl">Lucro estimado</span><span class="res-val" style="color:${lucro>0?'var(--green)':'var(--red)'}">${fmt(lucro)}</span></div>`:''}`;
+
   document.getElementById('kpis-resumo').innerHTML=`
-    <div class="kpi"><div class="kpi-label">Custo total</div><div class="kpi-value" style="font-size:18px">R$ 7.762</div><div class="kpi-sub">85 un. · 67 SKUs</div></div>
-    <div class="kpi"><div class="kpi-label">Venda projetada</div><div class="kpi-value" style="font-size:18px;color:var(--blue)">${vendaT>0?fmt(vendaT):'—'}</div><div class="kpi-sub">${PRODUTOS.filter(p=>precoVenda[p.id]).length} de 67 com preço</div></div>
+    <div class="kpi"><div class="kpi-label">Custo somado (#4334+#4350)</div><div class="kpi-value" style="font-size:18px">${fmt(custoSomado)}</div><div class="kpi-sub">${totalUn} un. · ${totalSkus} SKUs</div></div>
+    <div class="kpi"><div class="kpi-label">Venda projetada</div><div class="kpi-value" style="font-size:18px;color:var(--blue)">${vendaT>0?fmt(vendaT):'—'}</div><div class="kpi-sub">${PRODUTOS.filter(p=>precoVenda[p.id]).length} de ${totalSkus} com preço</div></div>
     <div class="kpi"><div class="kpi-label">Lucro estimado</div><div class="kpi-value" style="font-size:18px;color:${lucro>0?'var(--green)':'var(--text3)'}">${vendaT>0?fmt(lucro):'—'}</div><div class="kpi-sub">${vendaT>0?'Margem: '+((lucro/vendaT)*100).toFixed(1)+'%':'Preencha os preços'}</div></div>`;
 }
 
@@ -1291,7 +1384,7 @@ async function enviarIA(prompt){
   const ativas=vendas.filter(v=>v.status!=='cancelada');
   const sem=PRODUTOS.filter(p=>!precoVenda[p.id]).length;
   const ctx=`Você é o assistente do CaixaPRO da loja Rossatti Sportshop, Ponta Porã-MS, roupas esportivas Woom.
-Dados: Pedido Woom #4334, 67 SKUs, 85 unidades, custo R$ 7.761,83. SKUs sem preço: ${sem}.
+Dados: Pedidos Woom #4334 (67 SKUs, 85 un, custo R$ 7.761,83) e #4350 (47 SKUs novos + reposição, 102 un, custo R$ 10.966,74). Total catálogo: ${PRODUTOS.length} SKUs. SKUs sem preço: ${sem}.
 Vendas: ${ativas.length} concluídas, ${vendas.filter(v=>v.status==='cancelada').length} canceladas, total R$ ${ativas.reduce((a,v)=>a+v.total,0).toFixed(2)}.
 Caixa: ${caixaState.aberto?'Aberto':'Fechado'}. Clientes: ${clientes.length}.
 Responda em português, prático e direto. Máx 3 parágrafos.`;
@@ -1302,7 +1395,6 @@ Responda em português, prático e direto. Máx 3 parágrafos.`;
   }catch(e){document.getElementById('ai-loading').textContent='Erro de conexão.';}
   msgs.scrollTop=msgs.scrollHeight;
 }
-
 // ==================== VENDAS PENDENTES ====================
 let pendentes = carregar('pendentes', []);
 let npCarrinho = [];
@@ -1402,7 +1494,6 @@ function salvarPendente() {
     operador: usuarioAtual.nome
   };
 
-  // Baixa estoque
   pendente.itens.forEach(i => { estoqueAtual[i.id] = Math.max(0, (estoqueAtual[i.id]||0) - i.qty); });
   salvar('estoque_atual', Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
   renderPDV();
@@ -1410,7 +1501,6 @@ function salvarPendente() {
   pendentes.unshift(pendente);
   salvarPendentes();
   fecharModal('modal-nova-pendente');
-  // Limpa o carrinho se veio do PDV
   if(carrinho.length && carrinho.every(c => pendente.itens.some(i => i.id === c.id))) {
     limparCarrinho();
   }
@@ -1547,10 +1637,8 @@ function confirmarParcialPendente(id) {
     else itensVender.push(it);
   });
 
-  // Devolve os itens marcados para devolver
   itensDevolver.forEach(i => { estoqueAtual[i.id] = (estoqueAtual[i.id]||0) + i.qty; });
 
-  // Cria venda normal com os itens vendidos
   if(itensVender.length > 0) {
     const totalVenda = itensVender.reduce((a, i) => a + i.preco * i.qty, 0);
     const venda = {
@@ -1564,6 +1652,7 @@ function confirmarParcialPendente(id) {
       total: totalVenda,
       operador: usuarioAtual.nome,
       status: 'ok',
+      cliente: p.cliente,
       obs: `Pendente ${p.num} - ${p.cliente}`
     };
     vendas.unshift(venda);
@@ -1576,7 +1665,6 @@ function confirmarParcialPendente(id) {
   salvar('estoque_atual', Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
   renderPDV();
 
-  // Se ainda tem itens pendentes, atualiza a pendente com apenas esses itens
   if(itensPendente.length > 0) {
     p.itens = itensPendente;
     p.total = itensPendente.reduce((a, i) => a + i.preco * i.qty, 0);
@@ -1631,7 +1719,6 @@ function confirmarPendente() {
   p.pgto = pgtoAtualPendente;
   p.dataConfirmacao = new Date().toISOString();
 
-  // Cria venda normal
   const venda = {
     id: Date.now(),
     num: '#'+(vendas.length+1).toString().padStart(4,'0'),
@@ -1643,6 +1730,7 @@ function confirmarPendente() {
     total: p.total,
     operador: usuarioAtual.nome,
     status: 'ok',
+    cliente: p.cliente,
     obs: `Pendente ${p.num} - ${p.cliente}`
   };
   vendas.unshift(venda);
@@ -1678,7 +1766,6 @@ function devolverPendente() {
   p.status = 'devolvida';
   p.dataDevolucao = new Date().toISOString();
 
-  // Devolve ao estoque
   p.itens.forEach(i => { estoqueAtual[i.id] = (estoqueAtual[i.id]||0) + i.qty; });
   salvar('estoque_atual', Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
   renderPDV();
@@ -1705,7 +1792,6 @@ document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',e=
 (function(){
   let buffer = '';
   let lastKeyTime = 0;
-  const DELAY = 50;
   document.addEventListener('keydown', function(e){
     const tag = document.activeElement.tagName;
     if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
