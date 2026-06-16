@@ -1245,8 +1245,13 @@ function verDetalhe(id){
   const canc=v.status==='cancelada';
   document.getElementById('detalhe-venda-content').innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div><div style="font-weight:700;font-size:16px">${v.num}</div><div style="font-size:12px;color:var(--text2)">${fmtD(v.data)} · ${v.operador}${v.cliente?' · <strong>'+v.cliente+'</strong>':''}</div></div>
+      <div><div style="font-weight:700;font-size:16px">${v.num}</div><div style="font-size:12px;color:var(--text2)">${fmtD(v.data)} · ${v.operador}</div></div>
       <div style="display:flex;gap:6px"><span class="badge bb">${v.pgto}</span>${canc?'<span class="badge br">Cancelada</span>':'<span class="badge bg">Concluída</span>'}</div>
+    </div>
+    <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px">
+      <label style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Cliente</label>
+      <input type="text" id="dv-cliente-input" value="${v.cliente||''}" placeholder="Nome do cliente..." style="flex:1;padding:6px 10px;font-size:13px">
+      <button class="btn btn-blue btn-sm" onclick="salvarClienteVenda('${v.id}')"><i class="ti ti-check"></i> Salvar</button>
     </div>
     ${canc&&v.cancelamento?`<div class="banner ban-red" style="margin-bottom:12px"><i class="ti ti-alert-triangle" style="flex-shrink:0"></i><div>Cancelado em ${fmtD(v.cancelamento.data)}<br><strong>Motivo:</strong> ${v.cancelamento.motivo}${v.cancelamento.obs?' — '+v.cancelamento.obs:''}</div></div>`:''}
     <div class="table-wrap"><table>
@@ -1259,6 +1264,15 @@ function verDetalhe(id){
       <div style="font-size:18px;font-weight:700;margin-top:4px">Total: ${fmt(v.total)}</div>
     </div>`;
   document.getElementById('modal-detalhe-venda').classList.add('open');
+}
+
+function salvarClienteVenda(id){
+  const v=vendas.find(x=>x.id==id);if(!v)return;
+  v.cliente=document.getElementById('dv-cliente-input').value.trim();
+  salvar('vendas',vendas);
+  if(window.firebaseReady) window.fbSalvarVenda(v);
+  renderHistorico();
+  notif('Nome salvo!','ok');
 }
 
 function reimprimir(id){const v=vendas.find(x=>x.id==id);if(!v)return;vendaHistSel=v;imprimirCupomHist();}
@@ -1787,7 +1801,7 @@ function notif(msg,tipo){
   n.style.background=tipo==='ok'?'#3B6D11':tipo==='warn'?'#854F0B':'#A32D2D';
   n.classList.add('show');setTimeout(()=>n.classList.remove('show'),3000);
 }
-document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m){if(m.id==='modal-venda'){fecharModalVenda();}else{m.classList.remove('open');}}});});
 
 (function(){
   let buffer = '';
