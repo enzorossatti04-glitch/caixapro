@@ -1562,10 +1562,10 @@ function renderPendentes() {
 function verDetalhesPendente(id) {
   const p = pendentes.find(x => x.id == id);
   if(!p) return;
-  
+
   const canEdit = p.status === 'pendente';
   const statusLabel = p.status === 'confirmada' ? '<span class="badge bg">Confirmada</span>' : p.status === 'devolvida' ? '<span class="badge br">Devolvida</span>' : '<span class="badge ba">Pendente</span>';
-  
+
   document.getElementById('dp-info').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div><div style="font-weight:700;font-size:16px">${p.num}</div><div style="font-size:12px;color:var(--text2)">${p.cliente}${p.tel?' · '+p.tel:''}</div></div>
@@ -1574,36 +1574,7 @@ function verDetalhesPendente(id) {
     <div style="font-size:12px;color:var(--text2)">Saiu em: ${new Date(p.data).toLocaleDateString('pt-BR')} · Prazo: ${p.prazo ? new Date(p.prazo+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</div>
     ${p.obs ? `<div style="font-size:12px;color:var(--text2);margin-top:4px">Obs: ${p.obs}</div>` : ''}`;
 
-  document.getElementById('dp-itens').innerHTML = `
-    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:8px">
-      ${canEdit ? 'Selecione o que fazer com cada item:' : 'Itens:'}
-    </div>
-    <div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden">
-      ${p.itens.map((it, idx) => `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px" id="dp-item-${idx}">
-          ${canEdit ? `
-            <div style="display:flex;gap:6px">
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--green);color:var(--green);background:var(--green-bg)">
-                <input type="radio" name="dp-acao-${idx}" value="vender" checked onchange="atualizarResumoDetalhe('${id}')"> Vender
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--red);color:var(--red);background:var(--red-bg)">
-                <input type="radio" name="dp-acao-${idx}" value="devolver" onchange="atualizarResumoDetalhe('${id}')"> Devolver
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--amber);color:var(--amber);background:var(--amber-bg)">
-                <input type="radio" name="dp-acao-${idx}" value="pendente" onchange="atualizarResumoDetalhe('${id}')"> Pendente
-              </label>
-            </div>` : ''}
-          <div style="flex:1">
-            <div style="font-weight:500">${it.nome.substring(0,35)}</div>
-            <div style="font-size:11px;color:var(--text2)">${it.cor} · ${it.tam} · ${it.qty} un.</div>
-          </div>
-          <div style="font-weight:600">${fmt(it.preco * it.qty)}</div>
-        </div>`).join('')}
-      <div style="padding:10px 14px;display:flex;justify-content:space-between;font-weight:700;font-size:13px">
-        <span>Total</span><span>${fmt(p.total)}</span>
-      </div>
-    </div>
-    ${canEdit ? `<div id="dp-resumo" style="margin-top:10px;font-size:12px;color:var(--text2)"></div>` : ''}`;
+  renderDetalheItens(id, canEdit);
 
   if(canEdit) {
     document.getElementById('dp-acoes').innerHTML = `
@@ -1616,6 +1587,112 @@ function verDetalhesPendente(id) {
 
   document.getElementById('modal-detalhe-pendente').classList.add('open');
 }
+
+function renderDetalheItens(id, canEdit) {
+  const p = pendentes.find(x => x.id == id);
+  if(!p) return;
+
+  document.getElementById('dp-itens').innerHTML = `
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:8px">
+      ${canEdit ? 'Selecione o que fazer com cada item:' : 'Itens:'}
+    </div>
+    <div style="border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:${canEdit?'12px':'0'}">
+      ${p.itens.map((it, idx) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px" id="dp-item-${idx}">
+          ${canEdit ? `
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--green);color:var(--green);background:var(--green-bg)">
+                <input type="radio" name="dp-acao-${idx}" value="vender" checked onchange="atualizarResumoDetalhe('${id}')"> Vender
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--red);color:var(--red);background:var(--red-bg)">
+                <input type="radio" name="dp-acao-${idx}" value="devolver" onchange="atualizarResumoDetalhe('${id}')"> Devolver
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--amber);color:var(--amber);background:var(--amber-bg)">
+                <input type="radio" name="dp-acao-${idx}" value="pendente" onchange="atualizarResumoDetalhe('${id}')"> Pendente
+              </label>
+              <button onclick="removerItemPendente('${id}',${idx})" style="border:none;background:none;cursor:pointer;color:var(--text3);padding:2px 4px;font-size:16px" title="Remover item"><i class="ti ti-trash"></i></button>
+            </div>` : ''}
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:500;font-size:12px">${it.nome.substring(0,35)}</div>
+            <div style="font-size:11px;color:var(--text2)">${it.cor} · ${it.tam} · ${it.qty} un.</div>
+          </div>
+          <div style="font-weight:600;font-size:13px;flex-shrink:0">${fmt(it.preco * it.qty)}</div>
+        </div>`).join('')}
+      <div style="padding:10px 14px;display:flex;justify-content:space-between;font-weight:700;font-size:13px">
+        <span>Total</span><span id="dp-total-val">${fmt(p.total)}</span>
+      </div>
+    </div>
+    ${canEdit ? `
+    <div style="margin-bottom:8px">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Adicionar produto</div>
+      <input type="text" id="dp-add-busca" placeholder="Buscar produto..." oninput="filtrarProdutosEdicaoPendente(this.value,'${id}')" style="width:100%;margin-bottom:6px">
+      <div id="dp-add-lista" style="max-height:150px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);display:none"></div>
+    </div>
+    <div id="dp-resumo" style="margin-top:6px;font-size:12px;color:var(--text2)"></div>` : ''}`;
+
+  if(canEdit) atualizarResumoDetalhe(id);
+}
+
+function filtrarProdutosEdicaoPendente(busca, id) {
+  const lista = document.getElementById('dp-add-lista');
+  if(!busca.trim()) { lista.style.display='none'; return; }
+  const t = busca.toLowerCase();
+  const resultados = PRODUTOS.filter(p => precoVenda[p.id] &&
+    [p.nome,p.cor,p.tam,p.cat].join(' ').toLowerCase().includes(t)
+  ).slice(0,10);
+  if(!resultados.length) { lista.style.display='none'; return; }
+  lista.style.display='block';
+  lista.innerHTML = resultados.map(p => {
+    const saldo = estoqueAtual[p.id]||0;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;cursor:${saldo>0?'pointer':'default'};opacity:${saldo>0?1:0.5}" ${saldo>0?`onclick="adicionarItemPendente('${id}',${p.id})"`:'title="Sem estoque"'}>
+      <div>
+        <div style="font-weight:500">${p.nome.replace('Running Woom','').trim()}</div>
+        <div style="color:var(--text3)">${p.cor} · ${p.tam} · ${saldo} un. disponível</div>
+      </div>
+      <div style="font-weight:600;color:var(--blue)">${fmt(precoVenda[p.id])}</div>
+    </div>`;
+  }).join('');
+}
+
+function adicionarItemPendente(pendId, prodId) {
+  const p = pendentes.find(x => x.id == pendId);
+  const prod = PRODUTOS.find(x => x.id === prodId);
+  if(!p || !prod) return;
+  const saldo = estoqueAtual[prodId]||0;
+  if(saldo <= 0) { notif('Sem estoque disponível!','warn'); return; }
+  const existente = p.itens.find(i => i.id === prodId);
+  if(existente) {
+    if(existente.qty >= saldo) { notif('Estoque insuficiente!','warn'); return; }
+    existente.qty++;
+  } else {
+    p.itens.push({id:prodId,nome:prod.nome,cor:prod.cor,tam:prod.tam,qty:1,preco:precoVenda[prodId]||0});
+  }
+  estoqueAtual[prodId] = saldo - 1;
+  salvar('estoque_atual', Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
+  p.total = p.itens.reduce((a,i)=>a+i.preco*i.qty,0);
+  salvarPendentes();
+  renderPDV();
+  document.getElementById('dp-add-busca').value='';
+  document.getElementById('dp-add-lista').style.display='none';
+  renderDetalheItens(pendId, true);
+  notif(`${prod.nome.split(' ').slice(-2).join(' ')} adicionado!`,'ok');
+}
+
+function removerItemPendente(pendId, idx) {
+  const p = pendentes.find(x => x.id == pendId);
+  if(!p) return;
+  if(p.itens.length <= 1) { notif('A pendente precisa ter pelo menos 1 item.','warn'); return; }
+  const item = p.itens[idx];
+  estoqueAtual[item.id] = (estoqueAtual[item.id]||0) + item.qty;
+  salvar('estoque_atual', Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)])));
+  p.itens.splice(idx, 1);
+  p.total = p.itens.reduce((a,i)=>a+i.preco*i.qty,0);
+  salvarPendentes();
+  renderPDV();
+  renderDetalheItens(pendId, true);
+  notif('Item removido e estoque devolvido.','ok');
+}
+
 
 function atualizarResumoDetalhe(id) {
   const p = pendentes.find(x => x.id == id);
