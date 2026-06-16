@@ -593,6 +593,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
   <div class="modal">
     <div class="modal-title"><i class="ti ti-check" style="margin-right:6px;color:var(--green)"></i>Confirmar Venda</div>
     <div id="cp-info" style="font-size:13px;color:var(--text2);margin-bottom:14px"></div>
+    <div class="form-field"><label class="form-label">Desconto</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="cp-desconto-val" min="0" step="0.01" placeholder="0" style="flex:1" oninput="atualizarTotalConfirmacao()">
+        <select id="cp-desconto-tipo" style="width:60px" onchange="atualizarTotalConfirmacao()"><option value="R$">R$</option><option value="%">%</option></select>
+      </div>
+    </div>
+    <div id="cp-total-display" style="font-size:18px;font-weight:700;text-align:center;color:var(--blue);margin-bottom:14px"></div>
     <div class="form-field"><label class="form-label">Forma de pagamento</label>
       <div class="pgto-grid">
         <div class="pgto-btn sel" onclick="selPgtoPendente(this,'Dinheiro')"><i class="ti ti-cash"></i>Dinheiro</div>
@@ -1813,6 +1820,16 @@ function desfazerConfirmacaoPendente(id) {
   notif(`Pendente ${p.num} revertida. Estoque devolvido.`, 'ok');
 }
 
+function atualizarTotalConfirmacao() {
+  const p = pendentes.find(x => x.id == pendenteConfirmarId);
+  if(!p) return;
+  const dv = parseFloat(document.getElementById('cp-desconto-val').value)||0;
+  const dt = document.getElementById('cp-desconto-tipo').value;
+  const desc = dt==='%' ? p.total*dv/100 : Math.min(dv, p.total);
+  const tot = Math.max(0, p.total - desc);
+  document.getElementById('cp-total-display').textContent = fmt(tot);
+}
+
 function abrirConfirmarPendente(id) {
   const p = pendentes.find(x => x.id == id);
   if(!p) return;
@@ -1823,6 +1840,9 @@ function abrirConfirmarPendente(id) {
       ${p.itens.map(i=>`${i.nome.substring(0,25)} ${i.cor} ${i.tam} x${i.qty}`).join('<br>')}<br>
       <strong>Total: ${fmt(p.total)}</strong>
     </div>`;
+  document.getElementById('cp-desconto-val').value = '';
+  document.getElementById('cp-desconto-tipo').value = 'R$';
+  document.getElementById('cp-total-display').textContent = fmt(p.total);
   document.querySelectorAll('#modal-confirmar-pendente .pgto-btn').forEach(b=>b.classList.remove('sel'));
   document.querySelector('#modal-confirmar-pendente .pgto-btn').classList.add('sel');
   pgtoAtualPendente = 'Dinheiro';
@@ -1838,6 +1858,12 @@ function selPgtoPendente(el, p) {
 function confirmarPendente() {
   const p = pendentes.find(x => x.id == pendenteConfirmarId);
   if(!p) return;
+
+  const dv = parseFloat(document.getElementById('cp-desconto-val').value)||0;
+  const dt = document.getElementById('cp-desconto-tipo').value;
+  const desc = dt==='%' ? p.total*dv/100 : Math.min(dv, p.total);
+  const tot = Math.max(0, p.total - desc);
+
   p.status = 'confirmada';
   p.pgto = pgtoAtualPendente;
   p.dataConfirmacao = new Date().toISOString();
@@ -1849,8 +1875,8 @@ function confirmarPendente() {
     itens: p.itens,
     pgto: pgtoAtualPendente,
     subtotal: p.total,
-    desconto: 0,
-    total: p.total,
+    desconto: desc,
+    total: tot,
     operador: usuarioAtual.nome,
     status: 'ok',
     cliente: p.cliente,
@@ -1860,14 +1886,14 @@ function confirmarPendente() {
   salvar('vendas', vendas);
   if(window.firebaseReady) window.fbSalvarVenda(venda);
 
-  caixaState.movimentacoes.push({hora:new Date().toISOString(),tipo:'entrada',desc:`Venda pendente ${p.num} confirmada (${pgtoAtualPendente}) - ${p.cliente}`,valor:p.total});
+  caixaState.movimentacoes.push({hora:new Date().toISOString(),tipo:'entrada',desc:`Venda pendente ${p.num} confirmada (${pgtoAtualPendente}) - ${p.cliente}`,valor:tot});
   salvar('caixa', caixaState);
 
   salvarPendentes();
   fecharModal('modal-confirmar-pendente');
   renderPendentes();
   renderHistorico();
-  notif(`Venda ${p.num} confirmada!`, 'ok');
+  notif(`Venda ${p.num} confirmada! Total: ${fmt(tot)}`, 'ok');
 }
 
 function abrirDevolverPendente(id) {
