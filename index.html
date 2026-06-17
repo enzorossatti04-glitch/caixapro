@@ -558,11 +558,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
 </div>
 
 <div class="modal-bg" id="modal-detalhe-pendente">
-  <div class="modal wide">
-    <div class="modal-title"><i class="ti ti-clock" style="margin-right:6px;color:var(--amber)"></i>Detalhes da pendente</div>
-    <div id="dp-info" style="margin-bottom:14px"></div>
-    <div id="dp-itens" style="margin-bottom:14px"></div>
-    <div id="dp-acoes" style="display:flex;gap:8px;margin-top:18px"></div>
+  <div class="modal wide" style="max-height:90vh;display:flex;flex-direction:column">
+    <div class="modal-title" style="flex-shrink:0"><i class="ti ti-clock" style="margin-right:6px;color:var(--amber)"></i>Detalhes da pendente</div>
+    <div style="overflow-y:auto;flex:1;padding-right:4px">
+      <div id="dp-info" style="margin-bottom:14px"></div>
+      <div id="dp-itens" style="margin-bottom:14px"></div>
+    </div>
+    <div id="dp-acoes" style="display:flex;gap:8px;margin-top:18px;flex-shrink:0"></div>
   </div>
 </div>
 
@@ -950,8 +952,8 @@ function filtrarStatus(v){ftStatus=v;renderTabela();}
 function salvarPrecos(){salvar('precos',precoVenda);renderPDV();const sem=PRODUTOS.filter(p=>!precoVenda[p.id]).length;notif(sem>0?`Salvo! ${sem} sem preço.`:'Preços salvos!',sem>0?'warn':'ok');}
 
 function renderPDV(busca='',cat=''){
-  const t=busca.toLowerCase();
-  const lista=PRODUTOS.filter(p=>precoVenda[p.id]&&(!t||[p.nome,p.cor,p.tam,p.cat].join(' ').toLowerCase().includes(t))&&(!cat||p.cat===cat)).sort((a,b)=>(estoqueAtual[b.id]||0)-(estoqueAtual[a.id]||0));
+  const palavrasPDV = busca.toLowerCase().split(/\s+/).filter(Boolean);
+  const lista=PRODUTOS.filter(p=>precoVenda[p.id]&&(!palavrasPDV.length||palavrasPDV.every(w=>[p.nome,p.cor,p.tam,p.cat].join(' ').toLowerCase().includes(w)))&&(!cat||p.cat===cat)).sort((a,b)=>(estoqueAtual[b.id]||0)-(estoqueAtual[a.id]||0));
   const semPreco=PRODUTOS.filter(p=>!precoVenda[p.id]).length;
   document.getElementById('pdv-aviso').innerHTML=semPreco>0?`<div class="banner ban-amber" style="margin-bottom:10px"><i class="ti ti-tag-off" style="font-size:16px;flex-shrink:0"></i><span>${semPreco} produto(s) sem preço — configure em <strong>Estoque/Preços</strong>.</span></div>`:'';
   document.getElementById('pdv-grid').innerHTML=lista.length?lista.map(p=>`
@@ -1442,9 +1444,9 @@ function abrirModalNovaPendente() {
 }
 
 function filtrarProdutosPendente(busca) {
-  const t = busca.toLowerCase();
+  const palavras = busca.toLowerCase().split(/\s+/).filter(Boolean);
   const lista = PRODUTOS.filter(p => precoVenda[p.id] && (estoqueAtual[p.id] || 0) > 0 &&
-    (!t || [p.nome, p.cor, p.tam, p.cat].join(' ').toLowerCase().includes(t))
+    (!palavras.length || palavras.every(w => [p.nome,p.cor,p.tam,p.cat].join(' ').toLowerCase().includes(w)))
   ).slice(0, 20);
   document.getElementById('np-produtos-lista').innerHTML = lista.length ? lista.map(p => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;cursor:pointer" onclick="addNpCarrinho(${p.id})">
@@ -1707,10 +1709,11 @@ function renderDetalheItens(id, canEdit) {
 function filtrarProdutosEdicaoPendente(busca, id) {
   const lista = document.getElementById('dp-add-lista');
   if(!busca.trim()) { lista.style.display='none'; return; }
-  const t = busca.toLowerCase();
-  const resultados = PRODUTOS.filter(p => precoVenda[p.id] &&
-    [p.nome,p.cor,p.tam,p.cat].join(' ').toLowerCase().includes(t)
-  ).slice(0,10);
+  const palavras = busca.toLowerCase().split(/\s+/).filter(Boolean);
+  const resultados = PRODUTOS.filter(p => {
+    const haystack = [p.nome,p.cor,p.tam,p.cat].join(' ').toLowerCase();
+    return precoVenda[p.id] && palavras.every(w => haystack.includes(w));
+  }).slice(0,10);
   if(!resultados.length) { lista.style.display='none'; return; }
   lista.style.display='block';
   lista.innerHTML = resultados.map(p => {
