@@ -414,12 +414,25 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
     </div>
 
     <div class="page" id="page-relatorios">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="font-size:13px;font-weight:600;color:var(--text2)">Período:</div>
+        <select id="rel-mes-sel" onchange="renderRelatorios()" style="width:auto"></select>
+        <div id="rel-comparativo-badge" style="font-size:12px;padding:3px 10px;border-radius:99px"></div>
+      </div>
       <div class="kpi-grid g4" id="kpis-rel"></div>
+      <div class="kpi-grid g4" id="kpis-rel2" style="margin-top:0"></div>
       <div class="two-col" style="margin-bottom:14px">
-        <div class="card"><div class="card-title">Vendas por dia (últimos 7 dias)</div><div id="chart-dias"></div></div>
+        <div class="card"><div class="card-title">Faturamento diário</div><div id="chart-dias"></div></div>
         <div class="card"><div class="card-title">Por forma de pagamento</div><div id="chart-pgto"></div></div>
       </div>
-      <div class="card"><div class="card-title">Por categoria</div><div id="chart-cat"></div></div>
+      <div class="two-col" style="margin-bottom:14px">
+        <div class="card"><div class="card-title">Por categoria — faturamento e lucro</div><div id="chart-cat"></div></div>
+        <div class="card"><div class="card-title">Comparativo com mês anterior</div><div id="chart-comp"></div></div>
+      </div>
+      <div class="two-col" style="margin-bottom:14px">
+        <div class="card"><div class="card-title">Top 10 produtos mais vendidos</div><div id="chart-top"></div></div>
+        <div class="card"><div class="card-title">Produtos sem saída no período</div><div id="chart-parados"></div></div>
+      </div>
     </div>
 
     <div class="page" id="page-pendentes">
@@ -1321,30 +1334,197 @@ function salvarCliente(){
   notif('Cliente cadastrado!','ok');
 }
 
-function renderRelatorios(){
-  const ativas=vendas.filter(v=>v.status!=='cancelada');
-  const tot=ativas.reduce((a,v)=>a+v.total,0);
-  const hoje=ativas.filter(v=>new Date(v.data).toDateString()===new Date().toDateString());
-  const qtdItens=ativas.reduce((a,v)=>a+v.itens.reduce((b,i)=>b+i.qty,0),0);
-  document.getElementById('kpis-rel').innerHTML=`
-    <div class="kpi"><div class="kpi-label">Faturamento total</div><div class="kpi-value" style="font-size:18px">${fmt(tot)}</div><div class="kpi-sub">${ativas.length} vendas</div></div>
-    <div class="kpi"><div class="kpi-label">Hoje</div><div class="kpi-value" style="font-size:18px">${fmt(hoje.reduce((a,v)=>a+v.total,0))}</div><div class="kpi-sub">${hoje.length} venda(s)</div></div>
-    <div class="kpi"><div class="kpi-label">Itens vendidos</div><div class="kpi-value">${qtdItens}</div></div>
-    <div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-value" style="font-size:18px">${ativas.length?fmt(tot/ativas.length):'—'}</div></div>`;
-  const diasMap={};
-  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);diasMap[d.toDateString()]=0;}
-  ativas.forEach(v=>{const k=new Date(v.data).toDateString();if(k in diasMap)diasMap[k]+=v.total;});
-  const diasArr=Object.entries(diasMap);const maxD=Math.max(...diasArr.map(d=>d[1]),1);
-  document.getElementById('chart-dias').innerHTML=diasArr.map(([d,v])=>{
-    const dt=new Date(d);const label=dt.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric'});
-    return `<div class="chart-row"><div class="chart-lbl">${label}</div><div class="chart-bg"><div class="chart-fill" style="width:${Math.round(v/maxD*100)}%"></div></div><div class="chart-val">${v>0?fmt(v):'—'}</div></div>`;
+function initRelMesSel() {
+  const sel = document.getElementById('rel-mes-sel');
+  if(!sel || sel.options.length > 1) return;
+  const meses = new Set();
+  vendas.forEach(v => {
+    const d = new Date(v.data);
+    meses.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  });
+  const now = new Date();
+  meses.add(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+  const sorted = [...meses].sort().reverse();
+  sel.innerHTML = sorted.map(m => {
+    const [y,mo] = m.split('-');
+    const label = new Date(y, mo-1, 1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    return `<option value="${m}">${label.charAt(0).toUpperCase()+label.slice(1)}</option>`;
   }).join('');
-  const pgtoMap={};ativas.forEach(v=>{pgtoMap[v.pgto]=(pgtoMap[v.pgto]||0)+v.total;});
-  const pgtoArr=Object.entries(pgtoMap).sort((a,b)=>b[1]-a[1]);const maxP=Math.max(...pgtoArr.map(p=>p[1]),1);
-  document.getElementById('chart-pgto').innerHTML=pgtoArr.length?pgtoArr.map(([p,v])=>`<div class="chart-row"><div class="chart-lbl">${p}</div><div class="chart-bg"><div class="chart-fill" style="width:${Math.round(v/maxP*100)}%;background:var(--green)"></div></div><div class="chart-val">${fmt(v)}</div></div>`).join(''):'<div style="color:var(--text3);font-size:13px;padding:16px 0">Nenhuma venda ainda</div>';
-  const catMap={};ativas.forEach(v=>v.itens.forEach(i=>{const p=PRODUTOS.find(x=>x.id===i.id);if(p){catMap[p.cat]=(catMap[p.cat]||0)+i.preco*i.qty;}}));
-  const catArr=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);const maxC=Math.max(...catArr.map(c=>c[1]),1);
-  document.getElementById('chart-cat').innerHTML=catArr.length?catArr.map(([c,v])=>`<div class="chart-row"><div class="chart-lbl">${c}</div><div class="chart-bg"><div class="chart-fill" style="width:${Math.round(v/maxC*100)}%;background:var(--amber)"></div></div><div class="chart-val">${fmt(v)}</div></div>`).join(''):'<div style="color:var(--text3);font-size:13px;padding:16px 0">Nenhuma venda ainda</div>';
+}
+
+function renderRelatorios(){
+  initRelMesSel();
+  const sel = document.getElementById('rel-mes-sel');
+  const mesSel = sel ? sel.value : null;
+  const [anoSel, moSel] = mesSel ? mesSel.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth()+1];
+
+  const vMes = v => { const d=new Date(v.data); return d.getFullYear()===anoSel && d.getMonth()+1===moSel; };
+  const vMesAnt = v => {
+    const d=new Date(v.data);
+    const ant = new Date(anoSel, moSel-2, 1);
+    return d.getFullYear()===ant.getFullYear() && d.getMonth()===ant.getMonth();
+  };
+
+  const ativas = vendas.filter(v=>v.status!=='cancelada');
+  const doMes = ativas.filter(vMes);
+  const doMesAnt = ativas.filter(vMesAnt);
+
+  const fat = doMes.reduce((a,v)=>a+v.total,0);
+  const fatAnt = doMesAnt.reduce((a,v)=>a+v.total,0);
+  const desc = doMes.reduce((a,v)=>a+(v.desconto||0),0);
+  const descAnt = doMesAnt.reduce((a,v)=>a+(v.desconto||0),0);
+  const qtdItens = doMes.reduce((a,v)=>a+v.itens.reduce((b,i)=>b+i.qty,0),0);
+  const qtdItensAnt = doMesAnt.reduce((a,v)=>a+v.itens.reduce((b,i)=>b+i.qty,0),0);
+  const ticket = doMes.length ? fat/doMes.length : 0;
+  const ticketAnt = doMesAnt.length ? fatAnt/doMesAnt.length : 0;
+
+  // lucro estimado
+  let custo = 0;
+  doMes.forEach(v=>v.itens.forEach(i=>{const p=PRODUTOS.find(x=>x.id===i.id);if(p)custo+=p.custo*i.qty;}));
+  let custoAnt = 0;
+  doMesAnt.forEach(v=>v.itens.forEach(i=>{const p=PRODUTOS.find(x=>x.id===i.id);if(p)custoAnt+=p.custo*i.qty;}));
+  const lucro = fat - custo;
+  const lucroAnt = fatAnt - custoAnt;
+  const margem = fat > 0 ? (lucro/fat*100) : 0;
+
+  const delta = (a,b) => {
+    if(!b) return null;
+    const d = ((a-b)/b*100);
+    const cor = d>=0?'var(--green)':'var(--red)';
+    const sinal = d>=0?'▲':'▼';
+    return `<span style="font-size:11px;color:${cor};font-weight:600">${sinal} ${Math.abs(d).toFixed(1)}%</span>`;
+  };
+
+  // KPIs linha 1
+  document.getElementById('kpis-rel').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Faturamento</div><div class="kpi-value" style="font-size:18px">${fmt(fat)}</div><div class="kpi-sub">${doMes.length} vendas ${delta(fat,fatAnt)||''}</div></div>
+    <div class="kpi"><div class="kpi-label">Lucro estimado</div><div class="kpi-value" style="font-size:18px;color:${lucro>=0?'var(--green)':'var(--red)'}">${fmt(lucro)}</div><div class="kpi-sub">Margem ${margem.toFixed(1)}% ${delta(lucro,lucroAnt)||''}</div></div>
+    <div class="kpi"><div class="kpi-label">Ticket médio</div><div class="kpi-value" style="font-size:18px">${doMes.length?fmt(ticket):'—'}</div><div class="kpi-sub">${delta(ticket,ticketAnt)||''}</div></div>
+    <div class="kpi"><div class="kpi-label">Itens vendidos</div><div class="kpi-value">${qtdItens}</div><div class="kpi-sub">${delta(qtdItens,qtdItensAnt)||''}</div></div>`;
+
+  // KPIs linha 2
+  const canceladas = vendas.filter(vMes).filter(v=>v.status==='cancelada').length;
+  document.getElementById('kpis-rel2').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Descontos concedidos</div><div class="kpi-value" style="font-size:18px;color:var(--amber)">${fmt(desc)}</div><div class="kpi-sub">${doMes.length?((desc/(fat+desc))*100).toFixed(1)+'% do subtotal':''}</div></div>
+    <div class="kpi"><div class="kpi-label">Custo das mercadorias</div><div class="kpi-value" style="font-size:18px;color:var(--text2)">${fmt(custo)}</div></div>
+    <div class="kpi"><div class="kpi-label">Cancelamentos</div><div class="kpi-value" style="color:${canceladas>0?'var(--red)':'var(--green)'}">${canceladas}</div></div>
+    <div class="kpi"><div class="kpi-label">Vendas no mês</div><div class="kpi-value">${doMes.length}</div><div class="kpi-sub">${doMesAnt.length} no mês anterior</div></div>`;
+
+  // Faturamento diário
+  const diasNoMes = new Date(anoSel, moSel, 0).getDate();
+  const diasMap = {};
+  for(let d=1;d<=diasNoMes;d++) diasMap[d]=0;
+  doMes.forEach(v=>{ const d=new Date(v.data).getDate(); diasMap[d]=(diasMap[d]||0)+v.total; });
+  const diasArr = Object.entries(diasMap);
+  const maxD = Math.max(...diasArr.map(d=>d[1]),1);
+  document.getElementById('chart-dias').innerHTML = `<div style="max-height:280px;overflow-y:auto">` +
+    diasArr.filter(([,v])=>v>0).map(([d,v])=>`
+      <div class="chart-row">
+        <div class="chart-lbl">Dia ${d}</div>
+        <div class="chart-bg"><div class="chart-fill" style="width:${Math.round(v/maxD*100)}%"></div></div>
+        <div class="chart-val">${fmt(v)}</div>
+      </div>`).join('') + (diasArr.every(([,v])=>v===0)?'<div style="color:var(--text3);font-size:13px;padding:16px 0">Nenhuma venda no período</div>':'') + '</div>';
+
+  // Por pagamento
+  const pgtoMap={};
+  doMes.forEach(v=>{pgtoMap[v.pgto]=(pgtoMap[v.pgto]||0)+v.total;});
+  const pgtoArr=Object.entries(pgtoMap).sort((a,b)=>b[1]-a[1]);
+  const maxP=Math.max(...pgtoArr.map(p=>p[1]),1);
+  document.getElementById('chart-pgto').innerHTML=pgtoArr.length?pgtoArr.map(([p,v])=>`
+    <div class="chart-row">
+      <div class="chart-lbl">${p}</div>
+      <div class="chart-bg"><div class="chart-fill" style="width:${Math.round(v/maxP*100)}%;background:var(--green)"></div></div>
+      <div class="chart-val" style="display:flex;flex-direction:column;align-items:flex-end;gap:1px">
+        <span>${fmt(v)}</span>
+        <span style="font-size:10px;color:var(--text3)">${fat>0?(v/fat*100).toFixed(1)+'%':''}</span>
+      </div>
+    </div>`).join(''):'<div style="color:var(--text3);font-size:13px;padding:16px 0">Nenhuma venda no período</div>';
+
+  // Por categoria — faturamento + lucro
+  const catMap={};
+  doMes.forEach(v=>v.itens.forEach(i=>{
+    const p=PRODUTOS.find(x=>x.id===i.id);
+    if(!p)return;
+    if(!catMap[p.cat])catMap[p.cat]={fat:0,custo:0,qty:0};
+    catMap[p.cat].fat+=i.preco*i.qty;
+    catMap[p.cat].custo+=p.custo*i.qty;
+    catMap[p.cat].qty+=i.qty;
+  }));
+  const catArr=Object.entries(catMap).sort((a,b)=>b[1].fat-a[1].fat);
+  const maxC=Math.max(...catArr.map(c=>c[1].fat),1);
+  document.getElementById('chart-cat').innerHTML=catArr.length?`
+    <div style="display:grid;grid-template-columns:90px 1fr 70px 70px 40px;gap:4px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:6px;padding:0 2px">
+      <span>Categoria</span><span></span><span style="text-align:right">Faturado</span><span style="text-align:right">Lucro</span><span style="text-align:right">Un.</span>
+    </div>`+catArr.map(([c,d])=>{
+      const lucroC=d.fat-d.custo;
+      return `<div style="display:grid;grid-template-columns:90px 1fr 70px 70px 40px;gap:4px;align-items:center;margin-bottom:7px">
+        <div style="font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c}</div>
+        <div class="chart-bg"><div class="chart-fill" style="width:${Math.round(d.fat/maxC*100)}%"></div></div>
+        <div style="font-size:11px;font-weight:600;text-align:right">${fmt(d.fat)}</div>
+        <div style="font-size:11px;font-weight:600;text-align:right;color:${lucroC>=0?'var(--green)':'var(--red)'}">${fmt(lucroC)}</div>
+        <div style="font-size:11px;text-align:right;color:var(--text3)">${d.qty}</div>
+      </div>`;
+    }).join(''):'<div style="color:var(--text3);font-size:13px;padding:16px 0">Nenhuma venda no período</div>';
+
+  // Comparativo mês anterior
+  const compItems = [
+    ['Faturamento', fat, fatAnt],
+    ['Lucro', lucro, lucroAnt],
+    ['Vendas', doMes.length, doMesAnt.length],
+    ['Itens vendidos', qtdItens, qtdItensAnt],
+    ['Ticket médio', ticket, ticketAnt],
+    ['Descontos', desc, descAnt],
+  ];
+  const antLabel = new Date(anoSel, moSel-2, 1).toLocaleDateString('pt-BR',{month:'short'});
+  const atualLabel = new Date(anoSel, moSel-1, 1).toLocaleDateString('pt-BR',{month:'short'});
+  document.getElementById('chart-comp').innerHTML = !fatAnt && !fat
+    ? '<div style="color:var(--text3);font-size:13px;padding:16px 0">Sem dados suficientes para comparar</div>'
+    : `<div style="display:grid;grid-template-columns:100px 1fr 70px 70px;gap:4px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;margin-bottom:8px">
+        <span></span><span></span><span style="text-align:right">${antLabel}</span><span style="text-align:right">${atualLabel}</span>
+      </div>` + compItems.map(([lbl,atual,ant])=>{
+        const d = ant>0?((atual-ant)/ant*100):null;
+        const cor = d===null?'var(--text3)':d>=0?'var(--green)':'var(--red)';
+        const sinal = d===null?'—':d>=0?`▲ ${d.toFixed(1)}%`:`▼ ${Math.abs(d).toFixed(1)}%`;
+        const isVal = ['Faturamento','Lucro','Ticket médio','Descontos'].includes(lbl);
+        return `<div style="display:grid;grid-template-columns:100px 1fr 70px 70px;gap:4px;align-items:center;margin-bottom:7px">
+          <div style="font-size:12px;color:var(--text2)">${lbl}</div>
+          <div style="font-size:11px;font-weight:600;color:${cor};text-align:right">${sinal}</div>
+          <div style="font-size:11px;text-align:right;color:var(--text3)">${isVal?fmt(ant):ant}</div>
+          <div style="font-size:11px;font-weight:600;text-align:right">${isVal?fmt(atual):atual}</div>
+        </div>`;
+      }).join('');
+
+  // Top 10 produtos
+  const prodMap={};
+  doMes.forEach(v=>v.itens.forEach(i=>{
+    if(!prodMap[i.id])prodMap[i.id]={nome:i.nome,cor:i.cor,tam:i.tam,qty:0,fat:0};
+    prodMap[i.id].qty+=i.qty;
+    prodMap[i.id].fat+=i.preco*i.qty;
+  }));
+  const topArr=Object.values(prodMap).sort((a,b)=>b.qty-a.qty).slice(0,10);
+  const maxT=Math.max(...topArr.map(p=>p.qty),1);
+  document.getElementById('chart-top').innerHTML=topArr.length?topArr.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);width:16px;text-align:right">${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nome.replace('Running Woom','').replace('Woom','').trim()}</div>
+        <div style="font-size:10px;color:var(--text3)">${p.cor} · ${p.tam}</div>
+        <div class="chart-bg" style="margin-top:3px"><div class="chart-fill" style="width:${Math.round(p.qty/maxT*100)}%;background:var(--amber)"></div></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;text-align:right;flex-shrink:0">${p.qty} un.<br><span style="font-size:10px;color:var(--text3);font-weight:400">${fmt(p.fat)}</span></div>
+    </div>`).join(''):'<div style="color:var(--text3);font-size:13px;padding:16px 0">Nenhuma venda no período</div>';
+
+  // Produtos sem saída
+  const vendidosIds=new Set(doMes.flatMap(v=>v.itens.map(i=>i.id)));
+  const parados=PRODUTOS.filter(p=>!vendidosIds.has(p.id)&&(estoqueAtual[p.id]||0)>0&&precoVenda[p.id]);
+  document.getElementById('chart-parados').innerHTML=parados.length
+    ?`<div style="font-size:12px;color:var(--text2);margin-bottom:10px">${parados.length} produto(s) com estoque mas sem venda no período:</div>
+      <div style="max-height:220px;overflow-y:auto">` +
+      parados.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <div><div style="font-weight:500">${p.nome.replace('Running Woom','').trim()}</div><div style="font-size:10px;color:var(--text3)">${p.cor} · ${p.tam}</div></div>
+        <div style="text-align:right;flex-shrink:0"><div style="font-weight:600">${estoqueAtual[p.id]} un.</div><div style="font-size:10px;color:var(--text3)">${fmt(precoVenda[p.id])}</div></div>
+      </div>`).join('')+'</div>'
+    :'<div style="color:var(--green);font-size:13px;padding:16px 0">✓ Todos os produtos com estoque tiveram pelo menos uma venda no período!</div>';
 }
 
 function renderResumo(){
