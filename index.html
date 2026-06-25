@@ -762,6 +762,7 @@ const PRODUTOS=[
   {id:112,nome:'Bermuda Running Series Woom Berlim Feminino',cod:'15131041512013200',cat:'Bermudas',cor:'Verde',tam:'G',qtde:1,custo:194.38},
   {id:113,nome:'Bermuda Running Series Woom Berlim Feminino',cod:'15121041512012200',cat:'Bermudas',cor:'Verde',tam:'M',qtde:2,custo:194.38},
   {id:114,nome:'Bermuda Running Series Woom Berlim Feminino',cod:'15111041512011200',cat:'Bermudas',cor:'Verde',tam:'P',qtde:2,custo:194.38},
+  {id:115,nome:'Corta Vento Unissex',cod:'INTERNO-115',cat:'Corta Vento',cor:'Único',tam:'Único',qtde:54,custo:80.00},
 ];
 const USUARIOS=[{user:'admin',pass:'rossatti123',nome:'Administrador'},{user:'caixa',pass:'caixa123',nome:'Operador de Caixa'}];
 const LOJA='ROSSATTI SPORTSHOP';
@@ -785,6 +786,7 @@ function salvar(k,v){
 function carregar(k,def){try{const v=localStorage.getItem('cp_'+k);return v!=null?JSON.parse(v):def}catch(e){return def}}
 
 let precoVenda=carregar('precos',{});
+if(!precoVenda[115]) precoVenda[115]=200;
 let estoqueAtualRaw=carregar('estoque_atual',{});
 let estoqueAtual=Object.fromEntries(PRODUTOS.map(p=>[p.id, estoqueAtualRaw.hasOwnProperty(p.id)?Number(estoqueAtualRaw[p.id]):p.qtde]));
 let vendas=carregar('vendas',[]);
