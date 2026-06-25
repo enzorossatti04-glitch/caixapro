@@ -786,7 +786,6 @@ function salvar(k,v){
 function carregar(k,def){try{const v=localStorage.getItem('cp_'+k);return v!=null?JSON.parse(v):def}catch(e){return def}}
 
 let precoVenda=carregar('precos',{});
-if(!precoVenda[115]) precoVenda[115]=200;
 let estoqueAtualRaw=carregar('estoque_atual',{});
 let estoqueAtual=Object.fromEntries(PRODUTOS.map(p=>[p.id, estoqueAtualRaw.hasOwnProperty(p.id)?Number(estoqueAtualRaw[p.id]):p.qtde]));
 let vendas=carregar('vendas',[]);
@@ -845,6 +844,11 @@ async function initApp(){
         window.fbCarregarPendentes()
       ]);
       if(fbPrecos && Object.keys(fbPrecos).length>0){ precoVenda=fbPrecos; localStorage.setItem('cp_precos',JSON.stringify(fbPrecos)); }
+      // preços padrão para produtos sem código de barras (internos)
+      const precosDefault={115:200};
+      let precosAlterado=false;
+      Object.entries(precosDefault).forEach(([id,preco])=>{if(!precoVenda[Number(id)]){precoVenda[Number(id)]=preco;precosAlterado=true;}});
+      if(precosAlterado){ window.fbSalvarPrecos(precoVenda); localStorage.setItem('cp_precos',JSON.stringify(precoVenda)); }
       if(fbEstoque){ estoqueAtual=Object.fromEntries(PRODUTOS.map(p=>[p.id,Number(fbEstoque[p.id]??p.qtde)])); localStorage.setItem('cp_estoque_atual',JSON.stringify(estoqueAtual)); }
       if(fbVendas && fbVendas.length>0){ vendas=fbVendas; localStorage.setItem('cp_vendas',JSON.stringify(fbVendas)); }
       if(fbClientes && fbClientes.length>0){ clientes=fbClientes; localStorage.setItem('cp_clientes',JSON.stringify(fbClientes)); }
