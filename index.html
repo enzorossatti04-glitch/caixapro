@@ -766,6 +766,19 @@ const PRODUTOS=[
   {id:113,nome:'Bermuda Running Series Woom Berlim Feminino',cod:'15121041512012200',cat:'Bermudas',cor:'Verde',tam:'M',qtde:2,custo:194.38},
   {id:114,nome:'Bermuda Running Series Woom Berlim Feminino',cod:'15111041512011200',cat:'Bermudas',cor:'Verde',tam:'P',qtde:2,custo:194.38},
   {id:115,nome:'Corta Vento Unissex',cod:'INTERNO-115',cat:'Corta Vento',cor:'Único',tam:'Único',qtde:54,custo:80.00},
+  {id:116,nome:'Camisa Segunda Pele Woom Winter Masculina',cod:'1014251911425',cat:'Segunda Pele',cor:'Preto',tam:'GG',qtde:2,custo:111.05},
+  {id:117,nome:'Camisa Segunda Pele Woom Winter Masculina',cod:'1014251911325',cat:'Segunda Pele',cor:'Preto',tam:'G',qtde:2,custo:111.05},
+  {id:118,nome:'Camisa Segunda Pele Woom Winter Masculina',cod:'1014251911225',cat:'Segunda Pele',cor:'Preto',tam:'M',qtde:2,custo:111.05},
+  {id:119,nome:'Camisa Segunda Pele Woom Winter Feminina',cod:'1014251921325',cat:'Segunda Pele',cor:'Preto',tam:'G',qtde:2,custo:111.05},
+  {id:120,nome:'Camisa Segunda Pele Woom Winter Feminina',cod:'1014251921225',cat:'Segunda Pele',cor:'Preto',tam:'M',qtde:2,custo:111.05},
+  {id:121,nome:'Calça Running Woom Marathon Feminina',cod:'1011151921124',cat:'Calças',cor:'Preto',tam:'P',qtde:2,custo:194.39},
+  {id:122,nome:'Calça Running Woom Marathon Feminina',cod:'1011151921224',cat:'Calças',cor:'Preto',tam:'M',qtde:2,custo:194.39},
+  {id:123,nome:'Calça Running Woom Marathon Feminina',cod:'1011151921324',cat:'Calças',cor:'Preto',tam:'G',qtde:2,custo:194.39},
+  {id:124,nome:'Top Running Woom Marathon Feminino',cod:'1041152221124',cat:'Tops',cor:'Verde',tam:'P',qtde:3,custo:111.06},
+  {id:125,nome:'Top Running Woom Marathon Feminino',cod:'1041152221324',cat:'Tops',cor:'Verde',tam:'G',qtde:3,custo:111.06},
+  {id:126,nome:'Camisa Segunda Pele Woom Winter Feminina',cod:'1014251321325',cat:'Segunda Pele',cor:'Branco',tam:'G',qtde:2,custo:111.05},
+  {id:127,nome:'Camisa Segunda Pele Woom Winter Feminina',cod:'1014251321225',cat:'Segunda Pele',cor:'Branco',tam:'M',qtde:2,custo:111.05},
+  {id:128,nome:'Top Running Series Woom Branco Feminino',cod:'15281521510613200',cat:'Tops',cor:'Branco',tam:'G',qtde:1,custo:149.94},
 ];
 const USUARIOS=[{user:'admin',pass:'rossatti123',nome:'Administrador'},{user:'caixa',pass:'caixa123',nome:'Operador de Caixa'}];
 const LOJA='ROSSATTI SPORTSHOP';
@@ -776,6 +789,11 @@ const LOJA='ROSSATTI SPORTSHOP';
 const RECONCILIACAO_4350={
   flagId: 'reconciliacao_4350',
   deltas: {28:2, 42:3, 45:3, 49:4, 50:5}
+};
+
+const RECONCILIACAO_4387={
+  flagId: 'reconciliacao_4387',
+  deltas: {37:1, 38:1, 40:1, 56:2, 61:1, 62:2, 66:2, 67:1, 83:1, 26:2, 27:1, 104:2, 105:2, 106:2}
 };
 function salvar(k,v){
   try{localStorage.setItem('cp_'+k,JSON.stringify(v))}catch(e){}
@@ -817,6 +835,23 @@ function fazerLogin(){
 }
 function fazerLogout(){if(!confirm('Deseja sair?'))return;location.reload();}
 
+async function reconciliarEstoque4387(){
+  if(!window.firebaseReady) return;
+  try{
+    const jaRodou = await window.fbCarregarFlag(RECONCILIACAO_4387.flagId);
+    if(jaRodou) return;
+    Object.entries(RECONCILIACAO_4387.deltas).forEach(([id,delta])=>{
+      const pid=Number(id);
+      estoqueAtual[pid]=(Number(estoqueAtual[pid])||0)+delta;
+    });
+    const estoqueLimpo=Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)]));
+    salvar('estoque_atual',estoqueLimpo);
+    await window.fbSalvarFlag(RECONCILIACAO_4387.flagId,true);
+    const total=Object.values(RECONCILIACAO_4387.deltas).reduce((a,b)=>a+b,0);
+    notif(`Reposição #4387 conciliada: +${total} un. em 14 produtos.`,'ok');
+  }catch(e){ console.warn('Reconciliação 4387 falhou:',e); }
+}
+
 async function reconciliarEstoque4350(){
   if(!window.firebaseReady) return;
   try{
@@ -848,7 +883,7 @@ async function initApp(){
       ]);
       if(fbPrecos && Object.keys(fbPrecos).length>0){ precoVenda=fbPrecos; localStorage.setItem('cp_precos',JSON.stringify(fbPrecos)); }
       // preços padrão para produtos sem código de barras (internos)
-      const precosDefault={115:200};
+      const precosDefault={115:200,116:199.9,117:199.9,118:199.9,119:199.9,120:199.9,121:349.9,122:349.9,123:349.9,124:199.9,125:199.9,126:199.9,127:199.9,128:269.9};
       let precosAlterado=false;
       Object.entries(precosDefault).forEach(([id,preco])=>{if(!precoVenda[Number(id)]){precoVenda[Number(id)]=preco;precosAlterado=true;}});
       if(precosAlterado){ window.fbSalvarPrecos(precoVenda); localStorage.setItem('cp_precos',JSON.stringify(precoVenda)); }
@@ -864,6 +899,7 @@ async function initApp(){
     }
   } catch(err){ console.warn('Firebase offline, usando localStorage:', err); }
   await reconciliarEstoque4350();
+  await reconciliarEstoque4387();
   document.getElementById('app').style.opacity='1';
   initFiltros();renderTabela();renderStatusBar();renderPDV();
   renderCaixaStatus();renderHistorico();renderClientes();renderPendentes();renderInsights();atualizarTopbar('pdv');
