@@ -779,6 +779,29 @@ const PRODUTOS=[
   {id:126,nome:'Camisa Segunda Pele Woom Winter Feminina',cod:'1014251321325',cat:'Segunda Pele',cor:'Branco',tam:'G',qtde:2,custo:111.05},
   {id:127,nome:'Camisa Segunda Pele Woom Winter Feminina',cod:'1014251321225',cat:'Segunda Pele',cor:'Branco',tam:'M',qtde:2,custo:111.05},
   {id:128,nome:'Top Running Series Woom Branco Feminino',cod:'15281521510613200',cat:'Tops',cor:'Branco',tam:'G',qtde:1,custo:149.94},
+  {id:129,nome:'Z2 Power Powder Lime Zest',cod:'INTERNO-129',cat:'Suplementos',cor:'Lime Zest',tam:'900g',qtde:1,custo:106.39},
+  {id:130,nome:'Z2 Power Powder Iced Tangerine',cod:'INTERNO-130',cat:'Suplementos',cor:'Iced Tangerine',tam:'900g',qtde:1,custo:100.79},
+  {id:131,nome:'Z2 Soft Flask Dobrável Always Chasing',cod:'INTERNO-131',cat:'Suplementos',cor:'Único',tam:'250ml',qtde:2,custo:55.99},
+  {id:132,nome:'Z2 Saltz 500 Frutas Vermelhas Pote',cod:'INTERNO-132',cat:'Suplementos',cor:'Frutas Vermelhas',tam:'300g',qtde:1,custo:53.19},
+  {id:133,nome:'Z2 Saltz 1000 Pitaya Pote',cod:'INTERNO-133',cat:'Suplementos',cor:'Pitaya',tam:'300g',qtde:1,custo:55.99},
+  {id:134,nome:'Z2 Saltz 1000 Frutas Amarelas Pote',cod:'INTERNO-134',cat:'Suplementos',cor:'Frutas Amarelas',tam:'300g',qtde:1,custo:55.99},
+  {id:135,nome:'Z2 Saltz 500 Frutas Vermelhas Sachê',cod:'INTERNO-135',cat:'Suplementos',cor:'Frutas Vermelhas',tam:'Sachê',qtde:10,custo:4.194},
+  {id:136,nome:'Z2 Saltz 500 Água de Coco Sachê',cod:'INTERNO-136',cat:'Suplementos',cor:'Água de Coco',tam:'Sachê',qtde:10,custo:4.194},
+  {id:137,nome:'Z2 Saltz 1000 Pitaya Sachê',cod:'INTERNO-137',cat:'Suplementos',cor:'Pitaya',tam:'Sachê',qtde:10,custo:4.474},
+  {id:138,nome:'Z2 Saltz 1000 Frutas Amarelas Sachê',cod:'INTERNO-138',cat:'Suplementos',cor:'Frutas Amarelas',tam:'Sachê',qtde:10,custo:4.474},
+  {id:139,nome:'Z2 Saltz 1000 Tangerina Sachê',cod:'INTERNO-139',cat:'Suplementos',cor:'Tangerina',tam:'Sachê',qtde:10,custo:4.474},
+  {id:140,nome:'Z2 Saltz 500 Limão Sachê',cod:'INTERNO-140',cat:'Suplementos',cor:'Limão',tam:'Sachê',qtde:10,custo:4.194},
+  {id:141,nome:'Z2 Saltz 1000 Café Sachê',cod:'INTERNO-141',cat:'Suplementos',cor:'Café',tam:'Sachê',qtde:10,custo:4.199},
+  {id:142,nome:'Z2 Energy Gel Original 40 Carb',cod:'INTERNO-142',cat:'Suplementos',cor:'Original',tam:'Sachê',qtde:10,custo:10.634},
+  {id:143,nome:'Z2+ Energy Gel Original 40 Carb (Cafeína)',cod:'INTERNO-143',cat:'Suplementos',cor:'Original',tam:'Sachê',qtde:10,custo:11.194},
+  {id:144,nome:'Z2 Energy Gel Pink Lemonade',cod:'INTERNO-144',cat:'Suplementos',cor:'Pink Lemonade',tam:'Sachê',qtde:20,custo:8.394},
+  {id:145,nome:'Z2 Energy Gel Tangerine',cod:'INTERNO-145',cat:'Suplementos',cor:'Tangerine',tam:'Sachê',qtde:20,custo:8.394},
+  {id:146,nome:'Z2+ Energy Gel Iced Coffee (Cafeína)',cod:'INTERNO-146',cat:'Suplementos',cor:'Iced Coffee',tam:'Sachê',qtde:10,custo:8.954},
+  {id:147,nome:'Z2+ Energy Gel Original MPR (Cafeína)',cod:'INTERNO-147',cat:'Suplementos',cor:'Original MPR',tam:'Sachê',qtde:10,custo:8.954},
+  {id:148,nome:'Z2+ Energy Gel Double Expresso (Cafeína)',cod:'INTERNO-148',cat:'Suplementos',cor:'Double Expresso',tam:'Sachê',qtde:20,custo:8.954},
+  {id:149,nome:'Z2+ Energy Gel Lime (Cafeína)',cod:'INTERNO-149',cat:'Suplementos',cor:'Lime',tam:'Sachê',qtde:20,custo:8.954},
+  {id:150,nome:'Z2+ Energy Gel Freezin Cola (Cafeína)',cod:'INTERNO-150',cat:'Suplementos',cor:'Freezin Cola',tam:'Sachê',qtde:5,custo:8.954},
+  {id:151,nome:'Z2 Creatina 100% Pura Monohidratada',cod:'INTERNO-151',cat:'Suplementos',cor:'Único',tam:'300g',qtde:10,custo:39.194},
 ];
 const USUARIOS=[{user:'admin',pass:'rossatti123',nome:'Administrador'},{user:'caixa',pass:'caixa123',nome:'Operador de Caixa'}];
 const LOJA='ROSSATTI SPORTSHOP';
@@ -883,7 +906,15 @@ async function initApp(){
       ]);
       if(fbPrecos && Object.keys(fbPrecos).length>0){ precoVenda=fbPrecos; localStorage.setItem('cp_precos',JSON.stringify(fbPrecos)); }
       // preços padrão para produtos sem código de barras (internos)
-      const precosDefault={115:200,116:199.9,117:199.9,118:199.9,119:199.9,120:199.9,121:349.9,122:349.9,123:349.9,124:199.9,125:199.9,126:199.9,127:199.9,128:269.9};
+      const precosDefault={
+        115:200,116:199.9,117:199.9,118:199.9,119:199.9,120:199.9,
+        121:349.9,122:349.9,123:349.9,124:199.9,125:199.9,126:199.9,
+        127:199.9,128:269.9,
+        129:189.99,130:179.99,131:99.99,132:94.99,133:99.99,134:99.99,
+        135:7.00,136:7.00,137:7.00,138:7.00,139:7.00,140:7.00,141:7.00,
+        142:18.99,143:19.99,144:14.99,145:14.99,146:15.99,147:15.99,
+        148:15.99,149:15.99,150:15.99,151:69.99
+      };
       let precosAlterado=false;
       Object.entries(precosDefault).forEach(([id,preco])=>{if(!precoVenda[Number(id)]){precoVenda[Number(id)]=preco;precosAlterado=true;}});
       if(precosAlterado){ window.fbSalvarPrecos(precoVenda); localStorage.setItem('cp_precos',JSON.stringify(precoVenda)); }
