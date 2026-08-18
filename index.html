@@ -805,6 +805,11 @@ const PRODUTOS=[
   {id:152,nome:'Meia Cano Alto Woom GearLab Masculino',cod:'16251412211823312',cat:'Meias',cor:'Preto',tam:'39-44',qtde:5,custo:42.16},
   {id:153,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151911424',cat:'Camisetas',cor:'Preto',tam:'GG',qtde:2,custo:79.12},
   {id:154,nome:'Camiseta Running Woom Light Run Masculina',cod:'1017151311324',cat:'Camisetas',cor:'Branco',tam:'G',qtde:2,custo:79.12},
+  {id:155,nome:'Z2 Nitrato Beetz 500 Beterraba com Limão',cod:'INTERNO-155',cat:'Suplementos',cor:'Beterraba com Limão',tam:'Sachê',qtde:10,custo:7.274},
+  {id:156,nome:'Z2+ Energy Drink Power Powder Grape Express',cod:'INTERNO-156',cat:'Suplementos',cor:'Grape Express',tam:'900g',qtde:1,custo:106.39},
+  {id:157,nome:'Z2+ Energy Gel Choco Mint (Cafeína)',cod:'INTERNO-157',cat:'Suplementos',cor:'Choco Mint',tam:'Sachê',qtde:20,custo:8.954},
+  {id:158,nome:'Z2 Energy Gel Pitaya',cod:'INTERNO-158',cat:'Suplementos',cor:'Pitaya',tam:'Sachê',qtde:30,custo:8.394},
+  {id:159,nome:'Z2 Energy Gel Tropical Fruit',cod:'INTERNO-159',cat:'Suplementos',cor:'Tropical Fruit',tam:'Sachê',qtde:30,custo:8.394},
 ];
 const USUARIOS=[{user:'admin',pass:'rossatti123',nome:'Administrador'},{user:'caixa',pass:'caixa123',nome:'Operador de Caixa'}];
 const LOJA='ROSSATTI SPORTSHOP';
@@ -825,6 +830,11 @@ const RECONCILIACAO_4387={
 const RECONCILIACAO_4455={
   flagId: 'reconciliacao_4455',
   deltas: {49:5, 50:5, 68:5, 57:1, 60:2, 61:1, 62:1, 63:1, 65:2, 66:1}
+};
+
+const RECONCILIACAO_Z2B211443={
+  flagId: 'reconciliacao_z2_b2b11443',
+  deltas: {140:10, 139:10, 138:10, 137:10, 135:10, 146:20, 143:10, 132:1, 142:10, 144:30, 145:30, 147:30, 131:5, 133:2, 134:2}
 };
 function salvar(k,v){
   try{localStorage.setItem('cp_'+k,JSON.stringify(v))}catch(e){}
@@ -865,6 +875,23 @@ function fazerLogin(){
   initApp();
 }
 function fazerLogout(){if(!confirm('Deseja sair?'))return;location.reload();}
+
+async function reconciliarEstoqueZ2B211443(){
+  if(!window.firebaseReady) return;
+  try{
+    const jaRodou = await window.fbCarregarFlag(RECONCILIACAO_Z2B211443.flagId);
+    if(jaRodou) return;
+    Object.entries(RECONCILIACAO_Z2B211443.deltas).forEach(([id,delta])=>{
+      const pid=Number(id);
+      estoqueAtual[pid]=(Number(estoqueAtual[pid])||0)+delta;
+    });
+    const estoqueLimpo=Object.fromEntries(Object.entries(estoqueAtual).map(([k,v])=>[k,Number(v)]));
+    salvar('estoque_atual',estoqueLimpo);
+    await window.fbSalvarFlag(RECONCILIACAO_Z2B211443.flagId,true);
+    const total=Object.values(RECONCILIACAO_Z2B211443.deltas).reduce((a,b)=>a+b,0);
+    notif(`Reposição Z2 #B2B-11443 conciliada: +${total} un. em 15 produtos.`,'ok');
+  }catch(e){ console.warn('Reconciliação Z2 B2B-11443 falhou:',e); }
+}
 
 async function reconciliarEstoque4455(){
   if(!window.firebaseReady) return;
@@ -938,7 +965,8 @@ async function initApp(){
         129:189.99,130:179.99,131:99.99,132:94.99,133:99.99,134:99.99,
         135:7.00,136:7.00,137:7.00,138:7.00,139:7.00,140:7.00,141:7.00,
         142:18.99,143:19.99,144:14.99,145:14.99,146:15.99,147:15.99,
-        148:15.99,149:15.99,150:15.99,151:69.99
+        148:15.99,149:15.99,150:15.99,151:69.99,
+        155:12.99,156:189.99,157:15.99,158:14.99,159:14.99
       };
       let precosAlterado=false;
       Object.entries(precosDefault).forEach(([id,preco])=>{if(!precoVenda[Number(id)]){precoVenda[Number(id)]=preco;precosAlterado=true;}});
@@ -957,6 +985,7 @@ async function initApp(){
   await reconciliarEstoque4350();
   await reconciliarEstoque4387();
   await reconciliarEstoque4455();
+  await reconciliarEstoqueZ2B211443();
   document.getElementById('app').style.opacity='1';
   initFiltros();renderTabela();renderStatusBar();renderPDV();
   renderCaixaStatus();renderHistorico();renderClientes();renderPendentes();renderInsights();atualizarTopbar('pdv');
